@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        {{-- BUSCAR PAGOS / CLIENTE (SOLO DNI) --}}
+        {{-- BUSCAR PAGOS / CLIENTE (SOLO DNI aaa) --}}
         <div class="card border-0 shadow-sm mb-0">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
