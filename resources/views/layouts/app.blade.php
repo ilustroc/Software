@@ -192,7 +192,7 @@
                     <div class="accordion-body">
                         <ul class="nav flex-column small">
                             <li class="nav-item mb-1">
-                                <a href="#"
+                                <a href="{{ route('gestiones.propia12.form') }}"
                                    class="nav-link-soft">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 1 y 2
@@ -210,6 +210,20 @@
                                    class="nav-link-soft">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 4
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('gestiones.amd') }}"
+                                   class="nav-link-soft">
+                                    <i class="bi bi-folder2-open"></i>
+                                    AMD
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('gestiones.abandonados') }}"
+                                   class="nav-link-soft">
+                                    <i class="bi bi-folder2-open"></i>
+                                    Abadonados
                                 </a>
                             </li>
                         </ul>

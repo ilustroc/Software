@@ -156,7 +156,7 @@
                             <input type="text"
                                    name="moneda"
                                    class="form-control form-control-sm"
-                                   placeholder="S/ o US$">
+                                   placeholder="SOLES/DOLARES">
                         </div>
 
                         <div class="col-md-3">
@@ -203,26 +203,22 @@
      TABLA DE PAGOS
 =========================== --}}
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header">
         <strong>Listado de pagos</strong>
-        <span class="small text-muted">
-            Mostrando {{ $pagos->count() }} de {{ $pagos->total() }} registros
-        </span>
     </div>
 
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0 align-middle">
+            <table class="table table-sm table-hover table-striped mb-0 align-middle">
                 <thead class="table-light">
                     <tr class="text-nowrap">
-                        {{-- SIN ID --}}
                         <th>DNI</th>
                         <th>Operación</th>
                         <th>Fecha</th>
                         <th>Moneda</th>
                         <th class="text-end">Monto</th>
                         <th>Gestor</th>
-                        <th style="width: 360px;">Acciones</th>
+                        <th class="text-center" style="width: 260px;">Acciones</th>
                     </tr>
                 </thead>
 
@@ -237,31 +233,31 @@
                                 {{ number_format($p->MONTO, 2) }}
                             </td>
                             <td>{{ $p->GESTOR }}</td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {{-- BOTÓN EDITAR (ABRE MODAL) --}}
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    {{-- BOTÓN EDITAR (MODAL) --}}
                                     <button type="button"
-                                            class="btn btn-outline-primary btn-sm"
+                                            class="btn btn-outline-primary"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalPago{{ $p->id }}">
-                                        <i class="bi bi-pencil-square me-1"></i> Editar
+                                        <i class="bi bi-pencil-square"></i>
                                     </button>
 
-                                    {{-- FORM BORRAR --}}
+                                    {{-- BOTÓN BORRAR --}}
                                     <form method="POST"
-                                        action="{{ route('pagos.propia12.destroy', $p->id) }}"
-                                        onsubmit="return confirm('¿Eliminar este pago?');">
+                                          action="{{ route('pagos.propia12.destroy', $p->id) }}"
+                                          onsubmit="return confirm('¿Eliminar este pago?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-outline-danger btn-sm">
-                                            <i class="bi bi-trash me-1"></i> Borrar
+                                        <button class="btn btn-outline-danger" type="submit">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                 </div>
 
                                 {{-- MODAL EDITAR PAGO --}}
                                 <div class="modal fade" id="modalPago{{ $p->id }}" tabindex="-1"
-                                    aria-labelledby="modalPagoLabel{{ $p->id }}" aria-hidden="true">
+                                     aria-labelledby="modalPagoLabel{{ $p->id }}" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
 
@@ -274,70 +270,70 @@
                                             </div>
 
                                             <form method="POST"
-                                                action="{{ route('pagos.propia12.update', $p->id) }}">
+                                                  action="{{ route('pagos.propia12.update', $p->id) }}">
                                                 @csrf
 
                                                 <div class="modal-body">
                                                     <div class="mb-2">
                                                         <label class="form-label mb-0">DNI</label>
                                                         <input type="text"
-                                                            class="form-control form-control-sm"
-                                                            value="{{ $p->DNI }}"
-                                                            disabled>
+                                                               class="form-control form-control-sm"
+                                                               value="{{ $p->DNI }}"
+                                                               disabled>
                                                     </div>
 
                                                     <div class="mb-2">
                                                         <label class="form-label mb-0">Operación</label>
                                                         <input type="text"
-                                                            class="form-control form-control-sm"
-                                                            value="{{ $p->OPERACION }}"
-                                                            disabled>
+                                                               class="form-control form-control-sm"
+                                                               value="{{ $p->OPERACION }}"
+                                                               disabled>
                                                     </div>
 
                                                     <div class="mb-2">
                                                         <label class="form-label mb-0">Fecha</label>
                                                         <input type="date"
-                                                            name="fecha"
-                                                            value="{{ $p->FECHA }}"
-                                                            class="form-control form-control-sm"
-                                                            required>
+                                                               name="fecha"
+                                                               value="{{ $p->FECHA }}"
+                                                               class="form-control form-control-sm"
+                                                               required>
                                                     </div>
 
                                                     <div class="mb-2">
                                                         <label class="form-label mb-0">Moneda</label>
                                                         <input type="text"
-                                                            name="moneda"
-                                                            value="{{ $p->MONEDA }}"
-                                                            class="form-control form-control-sm">
+                                                               name="moneda"
+                                                               value="{{ $p->MONEDA }}"
+                                                               class="form-control form-control-sm">
                                                     </div>
 
                                                     <div class="mb-2">
                                                         <label class="form-label mb-0">Monto</label>
                                                         <input type="number"
-                                                            step="0.01"
-                                                            name="monto"
-                                                            value="{{ $p->MONTO }}"
-                                                            class="form-control form-control-sm text-end"
-                                                            required>
+                                                               step="0.01"
+                                                               name="monto"
+                                                               value="{{ $p->MONTO }}"
+                                                               class="form-control form-control-sm text-end"
+                                                               required>
                                                     </div>
 
                                                     <div class="mb-0">
                                                         <label class="form-label mb-0">Gestor</label>
                                                         <input type="text"
-                                                            name="gestor"
-                                                            value="{{ $p->GESTOR }}"
-                                                            class="form-control form-control-sm">
+                                                               name="gestor"
+                                                               value="{{ $p->GESTOR }}"
+                                                               class="form-control form-control-sm">
                                                     </div>
                                                 </div>
 
                                                 <div class="modal-footer">
                                                     <button type="button"
-                                                            class="btn btn-secondary"
+                                                            class="btn btn-outline-secondary btn-sm"
                                                             data-bs-dismiss="modal">
                                                         Cancelar
                                                     </button>
                                                     <button type="submit"
-                                                            class="btn btn-primary">
+                                                            class="btn btn-primary btn-sm">
                                                         Guardar cambios
                                                     </button>
                                                 </div>
@@ -360,10 +356,17 @@
             </table>
         </div>
 
-        <div class="p-3 border-top">
-            {{ $pagos->links() }}
+        <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <small class="text-muted mb-0">
+                Mostrando {{ $pagos->firstItem() }} al {{ $pagos->lastItem() }}
+                de {{ $pagos->total() }} registros
+            </small>
+
+            {{-- paginación pequeña --}}
+            {{ $pagos->onEachSide(1)->links('components.pagination-sm') }}
         </div>
     </div>
 </div>
+
 
 @endsection
