@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GestionPropiaController;
 use App\Http\Controllers\AbandonadosController;
 use App\Http\Controllers\PagosPropia12Controller;
+use App\Http\Controllers\GestionPropia3Controller;
+use App\Http\Controllers\GestionPropia4Controller;
 use App\Http\Controllers\AmdController;
 
 Route::middleware('web')->group(function () {
@@ -26,6 +28,20 @@ Route::middleware('web')->group(function () {
 
     Route::post('/gestiones/propia12/cargar', [GestionPropiaController::class, 'cargar'])
         ->name('gestiones.propia12.cargar');
+
+    // GESTIONES PROPIA 3 (Zigor)
+    Route::get('/gestiones/propia3', [GestionPropia3Controller::class, 'form'])
+        ->name('gestiones.propia3.form');
+
+    Route::post('/gestiones/propia3/cargar', [GestionPropia3Controller::class, 'cargar'])
+        ->name('gestiones.propia3.cargar');
+
+    // GESTIONES PROPIA 4 (KPI)
+    Route::get('/gestiones/propia4', [GestionPropia4Controller::class, 'form'])
+        ->name('gestiones.propia4.form');
+
+    Route::post('/gestiones/propia4/cargar', [GestionPropia4Controller::class, 'cargar'])
+        ->name('gestiones.propia4.cargar');
 
     // ABANDONADAS
     Route::get('/gestiones/abandonados', [AbandonadosController::class, 'index'])

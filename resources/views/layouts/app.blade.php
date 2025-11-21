@@ -199,14 +199,14 @@
                                 </a>
                             </li>
                             <li class="nav-item mb-1">
-                                <a href="#"
+                                <a href="{{ route('gestiones.propia3.form') }}"
                                    class="nav-link-soft">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 3
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#"
+                                <a href="{{ route('gestiones.propia4.form') }}"
                                    class="nav-link-soft">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 4
