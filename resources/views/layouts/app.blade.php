@@ -9,7 +9,7 @@
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
-    {{-- ICONOS (OPCIONAL) --}}
+    {{-- ICONOS --}}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
@@ -131,7 +131,7 @@
             padding: 1.25rem 1.5rem;
         }
 
-        /* RESPONSIVE: en pantallas muy pequeñas, sidebar arriba */
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -193,37 +193,37 @@
                         <ul class="nav flex-column small">
                             <li class="nav-item mb-1">
                                 <a href="{{ route('gestiones.propia12.form') }}"
-                                   class="nav-link-soft">
+                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia12.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 1 y 2
                                 </a>
                             </li>
                             <li class="nav-item mb-1">
                                 <a href="{{ route('gestiones.propia3.form') }}"
-                                   class="nav-link-soft">
+                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia3.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 3
                                 </a>
                             </li>
-                            <li class="nav-item">
+                            <li class="nav-item mb-1">
                                 <a href="{{ route('gestiones.propia4.form') }}"
-                                   class="nav-link-soft">
+                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia4.*') ? 'active' : '' }}">
                                     <i class="bi bi-folder2-open"></i>
                                     Propia 4
                                 </a>
                             </li>
-                            <li class="nav-item">
+                            <li class="nav-item mb-1">
                                 <a href="{{ route('gestiones.amd') }}"
-                                   class="nav-link-soft">
+                                   class="nav-link-soft {{ request()->routeIs('gestiones.amd') ? 'active' : '' }}">
                                     <i class="bi bi-folder2-open"></i>
                                     AMD
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="{{ route('gestiones.abandonados') }}"
-                                   class="nav-link-soft">
+                                   class="nav-link-soft {{ request()->routeIs('gestiones.abandonados') ? 'active' : '' }}">
                                     <i class="bi bi-folder2-open"></i>
-                                    Abadonados
+                                    Abandonados
                                 </a>
                             </li>
                         </ul>
@@ -276,7 +276,7 @@
                 </div>
             </div>
 
-            {{-- Cargas --}}
+            {{-- Cargas Cartera --}}
             <div class="accordion-item mt-1">
                 <h2 class="accordion-header" id="headingCartera">
                     <button class="accordion-button collapsed"
@@ -321,6 +321,23 @@
                 </div>
             </div>
 
+        </div> {{-- /accordion --}}
+
+        {{-- BLOQUE PARÁMETROS --}}
+        <div class="mt-3">
+            <span class="nav-link text-uppercase small text-muted px-0">
+                Parámetros
+            </span>
+
+            <ul class="nav flex-column small mt-1">
+                <li class="nav-item">
+                    <a href="{{ route('parametros.tipificaciones.index') }}"
+                       class="nav-link-soft {{ request()->routeIs('parametros.tipificaciones.*') ? 'active' : '' }}">
+                        <i class="bi bi-card-checklist me-1"></i>
+                        Tipificaciones
+                    </a>
+                </li>
+            </ul>
         </div>
 
         {{-- FOOTER SIDEBAR --}}
@@ -350,7 +367,6 @@
                     @yield('page_subtitle', 'Gestión de cargas y reportes de propia.')
                 </div>
             </div>
-            {{-- Espacio para filtros, fecha o acciones rápidas --}}
             <div class="d-none d-md-flex align-items-center gap-2">
                 <span class="badge text-bg-light border">
                     {{ now()->format('d/m/Y') }}
@@ -368,3 +384,4 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

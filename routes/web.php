@@ -7,6 +7,7 @@ use App\Http\Controllers\AbandonadosController;
 use App\Http\Controllers\PagosPropia12Controller;
 use App\Http\Controllers\GestionPropia3Controller;
 use App\Http\Controllers\GestionPropia4Controller;
+use App\Http\Controllers\TipificacionController;
 use App\Http\Controllers\AmdController;
 
 Route::middleware('web')->group(function () {
@@ -78,4 +79,17 @@ Route::middleware('web')->group(function () {
 
     Route::delete('/pagos/propia12/{id}', [PagosPropia12Controller::class, 'destroy'])
         ->name('pagos.propia12.destroy');
+        
+    // TIPIFICACIONES
+    Route::get('/parametros/tipificaciones', [TipificacionController::class, 'index'])
+        ->name('parametros.tipificaciones.index');
+    
+    Route::post('/parametros/tipificaciones', [TipificacionController::class, 'store'])
+        ->name('parametros.tipificaciones.store');
+    
+    Route::post('/parametros/tipificaciones/{tipificacion}', [TipificacionController::class, 'update'])
+        ->name('parametros.tipificaciones.update');
+    
+    Route::delete('/parametros/tipificaciones/{tipificacion}', [TipificacionController::class, 'destroy'])
+        ->name('parametros.tipificaciones.destroy');
 });
