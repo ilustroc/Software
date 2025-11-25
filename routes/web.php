@@ -30,6 +30,9 @@ Route::middleware('web')->group(function () {
     Route::post('/gestiones/propia12/cargar', [GestionPropiaController::class, 'cargar'])
         ->name('gestiones.propia12.cargar');
 
+    Route::post('/gestiones/propia12/import-excel', [GestionPropiaController::class, 'importExcel'])
+        ->name('gestiones.propia12.importExcel');
+        
     // GESTIONES PROPIA 3 (Zigor)
     Route::get('/gestiones/propia3', [GestionPropia3Controller::class, 'form'])
         ->name('gestiones.propia3.form');

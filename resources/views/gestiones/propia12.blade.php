@@ -57,4 +57,37 @@
             </form>
         </div>
     </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Subir gestiones desde Excel</h5>
+            <p class="mb-2">
+                Usa la plantilla <a href="{{ asset('plantillas/plantilla_gestiones_propia12.xlsx') }}" download>
+                plantilla_gestiones_propia12.xlsx</a> para registrar las gestiones.
+            </p>
+
+            <form method="POST"
+                action="{{ route('gestiones.propia12.importExcel') }}"
+                enctype="multipart/form-data"
+                class="row g-3">
+                @csrf
+                <div class="col-md-6">
+                    <label class="form-label">Archivo Excel (.xlsx)</label>
+                    <input type="file"
+                        name="archivo"
+                        accept=".xlsx"
+                        class="form-control @error('archivo') is-invalid @enderror">
+                    @error('archivo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-12">
+                    <button class="btn btn-success" type="submit">
+                        Importar gestiones desde Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection

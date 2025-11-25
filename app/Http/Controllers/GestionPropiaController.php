@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+// Para leer Excel
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+
 class GestionPropiaController extends Controller
 {
     public function form()
@@ -38,7 +42,7 @@ class GestionPropiaController extends Controller
         // Crear fechas con hora completa
         $desdeFull = $desde . ' 00:00:00';
         $hastaFull = $hasta . ' 23:59:59';
-        
+
         try {
             // 2) Ejecutar el SP con rango de fechas en el CRM
             $rows = DB::connection('crm')->select(
@@ -80,7 +84,6 @@ class GestionPropiaController extends Controller
             DB::beginTransaction();
 
             // 4) BORRAR SOLO EL TRAMO en nuestra tabla
-            // Borrar tramo por dateprocessed
             DB::table('Gestiones_1y2')
                 ->whereBetween('dateprocessed', [$desdeFull, $hastaFull])
                 ->delete();
@@ -100,6 +103,111 @@ class GestionPropiaController extends Controller
         } catch (Throwable $e) {
             DB::rollBack();
             return back()->with('error', 'Error al cargar gestiones: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: importar gestiones desde un Excel con la plantilla.
+     */
+    public function importExcel(Request $request)
+    {
+        if (!session()->has('usuario')) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'], // 10MB
+        ], [], [
+            'archivo' => 'archivo Excel',
+        ]);
+
+        $file = $request->file('archivo');
+
+        try {
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $sheet       = $spreadsheet->getActiveSheet();
+            $rows        = $sheet->toArray(null, true, true, true);
+
+            if (count($rows) <= 1) {
+                return back()->with('error', 'El archivo no contiene datos.');
+            }
+
+            // Fila 1 = encabezados
+            $headerRow = array_shift($rows);
+
+            // Mapear encabezados a índice de columna
+            $map = $this->mapHeaders($headerRow, [
+                'documento',
+                'nombre',
+                'value2',
+                'value1',
+                'fullname',
+                'operacion',
+                'entidad',
+                'cartera',
+                'dateprocessed',
+                'fechaAgenda',
+                'callerid',
+                'comment',
+                'pagar_por_cuota',
+                'nroCuotas',
+                'fecha_promesa',
+                'campaign',
+            ]);
+
+            $data = [];
+            foreach ($rows as $row) {
+                // Si no hay documento ni dateprocessed, consideramos fila vacía
+                $documento = $this->getCell($row, $map, 'documento');
+                $dateProc  = $this->getCell($row, $map, 'dateprocessed');
+
+                if ($documento === '' && $dateProc === '') {
+                    continue;
+                }
+
+                $montoCuota   = $this->parseMonto($this->getCell($row, $map, 'pagar_por_cuota'));
+                $fechaPromesa = $this->parseExcelDate($this->getCell($row, $map, 'fecha_promesa'));
+                $fechaAgenda  = $this->parseExcelDate($this->getCell($row, $map, 'fechaAgenda'));
+                $dateProcessed= $this->parseExcelDate($dateProc);
+
+                $data[] = [
+                    'documento'       => $documento ?: null,
+                    'nombre'          => $this->getCell($row, $map, 'nombre') ?: null,
+                    'value2'          => $this->getCell($row, $map, 'value2') ?: null,
+                    'value1'          => $this->getCell($row, $map, 'value1') ?: null,
+                    'fullname'        => $this->getCell($row, $map, 'fullname') ?: null,
+                    'operacion'       => $this->getCell($row, $map, 'operacion') ?: null,
+                    'entidad'         => $this->getCell($row, $map, 'entidad') ?: null,
+                    'cartera'         => $this->getCell($row, $map, 'cartera') ?: null,
+                    'dateprocessed'   => $dateProcessed,
+                    'fechaAgenda'     => $fechaAgenda,
+                    'callerid'        => $this->getCell($row, $map, 'callerid') ?: null,
+                    'comment'         => $this->getCell($row, $map, 'comment') ?: null,
+                    'pagar_por_cuota' => $montoCuota,
+                    'nroCuotas'       => $this->getCell($row, $map, 'nroCuotas') !== '' ? (int)$this->getCell($row, $map, 'nroCuotas') : null,
+                    'fecha_promesa'   => $fechaPromesa,
+                    'campaign'        => $this->getCell($row, $map, 'campaign') ?: null,
+                ];
+            }
+
+            if (empty($data)) {
+                return back()->with('error', 'No se encontraron filas válidas en el Excel.');
+            }
+
+            DB::beginTransaction();
+
+            // Insertar en bloques
+            foreach (array_chunk($data, 500) as $chunk) {
+                DB::table('Gestiones_1y2')->insert($chunk);
+            }
+
+            DB::commit();
+
+            return back()->with('msg', 'Gestiones importadas correctamente desde Excel. Total registros: ' . count($data));
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error al importar gestiones desde Excel: ' . $e->getMessage());
         }
     }
 
@@ -144,5 +252,61 @@ class GestionPropiaController extends Controller
 
         // Formato MySQL DATETIME
         return date('Y-m-d H:i:s', $ts);
+    }
+
+    /**
+     * Convierte una celda de Excel (string o número) en DATETIME MySQL.
+     */
+    private function parseExcelDate($valor): ?string
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        // Si es numérico, asumimos serial de Excel
+        if (is_numeric($valor)) {
+            try {
+                $dt = ExcelDate::excelToDateTimeObject($valor);
+                return $dt->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        // Si es texto, reutilizamos parseFecha
+        return $this->parseFecha((string)$valor);
+    }
+
+    /**
+     * Mapea encabezados a claves.
+     */
+    private function mapHeaders(array $headerRow, array $expected): array
+    {
+        $map = [];
+
+        // $headerRow viene como ['A' => 'documento', 'B' => 'nombre', ...]
+        foreach ($headerRow as $col => $name) {
+            $nameLower = strtolower(trim((string)$name));
+            foreach ($expected as $exp) {
+                if ($nameLower === strtolower($exp)) {
+                    $map[$exp] = $col;
+                    break;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Obtiene el valor de una celda usando el mapa de headers.
+     */
+    private function getCell(array $row, array $map, string $key): string
+    {
+        if (!isset($map[$key])) {
+            return '';
+        }
+        $col = $map[$key];
+        return isset($row[$col]) ? trim((string)$row[$col]) : '';
     }
 }
