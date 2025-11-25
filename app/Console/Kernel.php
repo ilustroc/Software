@@ -12,9 +12,17 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('gestiones:propia12-hora')->hourly();
-        $schedule->command('gestiones:propia4-hora')->hourly();
-        $schedule->command('gestiones:propia3-hora')->hourly();
+        $schedule->command('gestiones:propia12-hora')
+            ->hourly()
+            ->appendOutputTo(storage_path('logs/gestiones_propia12.log'));
+
+        $schedule->command('gestiones:propia4-hora')
+            ->hourly()
+            ->appendOutputTo(storage_path('logs/gestiones_propia4.log'));
+
+        $schedule->command('gestiones:propia3-hora')
+            ->hourly()
+            ->appendOutputTo(storage_path('logs/gestiones_propia3.log'));
     }
 
     /**
