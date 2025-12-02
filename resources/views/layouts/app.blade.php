@@ -258,14 +258,14 @@
                                 </a>
                             </li>
                             <li class="nav-item mb-1">
-                                <a href="#"
+                                <a href="{{ route('pagos.propia3.index') }}"
                                    class="nav-link-soft">
                                     <i class="bi bi-credit-card"></i>
                                     Propia 3
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#"
+                                <a href="{{ route('pagos.propia4.index') }}"
                                    class="nav-link-soft">
                                     <i class="bi bi-credit-card"></i>
                                     Propia 4

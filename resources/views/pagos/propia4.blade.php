@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Pagos Propia 1 y 2')
-@section('page_title', 'Pagos - Cartera Propia 1 y 2')
+@section('title', 'Pagos Propia 4')
+@section('page_title', 'Pagos - Cartera Propia 4')
 @section('page_subtitle', 'Carga masiva, registro manual y edición rápida de pagos.')
 
 @section('content')
@@ -36,27 +36,32 @@
                 <div>
                     <strong>Carga masiva de pagos</strong>
                     <div class="small text-muted">
-                        Importa un archivo CSV con pagos de Cartera Propia 1 y 2.
+                        Importa un archivo CSV/TXT con pagos de Cartera Propia 4.
                     </div>
                 </div>
                 <span class="badge text-bg-light border">
-                    CSV / delimitado por comas
+                    CSV / TXT delimitado por comas
                 </span>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('pagos.propia12.upload') }}" enctype="multipart/form-data">
+                <form method="POST"
+                      action="{{ route('pagos.propia4.upload') }}"
+                      enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3 align-items-end">
 
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Archivo CSV</label>
+                            <label class="form-label fw-semibold">Archivo CSV / TXT</label>
                             <input type="file"
                                    name="archivo"
-                                   class="form-control form-control-sm"
+                                   accept=".csv,.txt"
+                                   class="form-control form-control-sm @error('archivo') is-invalid @enderror"
                                    required>
+                            @error('archivo')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                             <div class="form-text">
-                                Asegúrate de que el CSV tenga las columnas esperadas
-                                (DNI, Operación, Fecha, Monto, etc.).
+                                Formato: DNI, OPERACION, MONEDA, FECHA(YYYY-MM-DD), MONTO, GESTOR.
                             </div>
                         </div>
 
@@ -71,7 +76,7 @@
             </div>
         </div>
 
-        {{-- BUSCAR PAGOS / CLIENTE (SOLO DNI aaa) --}}
+        {{-- BUSCAR PAGOS / CLIENTE (SOLO DNI) --}}
         <div class="card border-0 shadow-sm mb-0">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
@@ -87,7 +92,7 @@
                 @endif
             </div>
             <div class="card-body">
-                <form method="GET" action="{{ route('pagos.propia12.index') }}">
+                <form method="GET" action="{{ route('pagos.propia4.index') }}">
                     <div class="row g-3 align-items-end">
 
                         <div class="col-md-8">
@@ -106,7 +111,7 @@
 
                         @if($dni)
                             <div class="col-12 d-grid">
-                                <a href="{{ route('pagos.propia12.index') }}"
+                                <a href="{{ route('pagos.propia4.index') }}"
                                    class="btn btn-link btn-sm text-decoration-none">
                                     Limpiar filtro
                                 </a>
@@ -123,14 +128,20 @@
     {{-- COLUMNA DERECHA: REGISTRAR PAGO MANUAL --}}
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header">
-                <strong>Registrar pago manual</strong>
-                <div class="small text-muted">
-                    Usa este formulario para corregir o registrar un pago puntual.
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Registrar pago manual</strong>
+                    <div class="small text-muted">
+                        Usa este formulario para corregir o registrar un pago puntual.
+                    </div>
                 </div>
+                <a href="{{ route('pagos.propia4.template') }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-filetype-csv me-1"></i> Descargar plantilla CSV
+                </a>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('pagos.propia12.store') }}">
+                <form method="POST" action="{{ route('pagos.propia4.store') }}">
                     @csrf
 
                     <div class="row g-3">
@@ -139,32 +150,40 @@
                             <label class="form-label fw-semibold">DNI</label>
                             <input type="text"
                                    name="dni"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('dni') }}"
+                                   class="form-control form-control-sm @error('dni') is-invalid @enderror"
                                    required>
+                            @error('dni') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Operación</label>
                             <input type="text"
                                    name="operacion"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('operacion') }}"
+                                   class="form-control form-control-sm @error('operacion') is-invalid @enderror"
                                    required>
+                            @error('operacion') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Moneda</label>
                             <input type="text"
                                    name="moneda"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('moneda', 'SOLES') }}"
+                                   class="form-control form-control-sm @error('moneda') is-invalid @enderror"
                                    placeholder="SOLES/DOLARES">
+                            @error('moneda') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Fecha</label>
                             <input type="date"
                                    name="fecha"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('fecha', now()->toDateString()) }}"
+                                   class="form-control form-control-sm @error('fecha') is-invalid @enderror"
                                    required>
+                            @error('fecha') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         {{-- Fila 2 --}}
@@ -173,16 +192,20 @@
                             <input type="number"
                                    step="0.01"
                                    name="monto"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('monto') }}"
+                                   class="form-control form-control-sm @error('monto') is-invalid @enderror"
                                    required>
+                            @error('monto') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-5">
                             <label class="form-label fw-semibold">Gestor</label>
                             <input type="text"
                                    name="gestor"
-                                   class="form-control form-control-sm"
+                                   value="{{ old('gestor') }}"
+                                   class="form-control form-control-sm @error('gestor') is-invalid @enderror"
                                    placeholder="Opcional">
+                            @error('gestor') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-4 d-grid d-md-flex align-items-end justify-content-md-end mt-1">
@@ -194,9 +217,6 @@
                     </div>
                 </form>
             </div>
-            <a href="{{ route('pagos.propia12.template') }}" class="btn btn-outline-secondary btn-sm">
-                Descargar plantilla CSV
-            </a>
         </div>
     </div>
 </div>
@@ -248,7 +268,7 @@
 
                                     {{-- BOTÓN BORRAR --}}
                                     <form method="POST"
-                                          action="{{ route('pagos.propia12.destroy', $p->id) }}"
+                                          action="{{ route('pagos.propia4.destroy', $p->id) }}"
                                           onsubmit="return confirm('¿Eliminar este pago?');">
                                         @csrf
                                         @method('DELETE')
@@ -273,8 +293,9 @@
                                             </div>
 
                                             <form method="POST"
-                                                  action="{{ route('pagos.propia12.update', $p->id) }}">
+                                                  action="{{ route('pagos.propia4.update', $p->id) }}">
                                                 @csrf
+                                                @method('PUT')
 
                                                 <div class="modal-body">
                                                     <div class="mb-2">
@@ -361,8 +382,12 @@
 
         <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
             <small class="text-muted mb-0">
-                Mostrando {{ $pagos->firstItem() }} al {{ $pagos->lastItem() }}
-                de {{ $pagos->total() }} registros
+                @if($pagos->count())
+                    Mostrando {{ $pagos->firstItem() }} al {{ $pagos->lastItem() }}
+                    de {{ $pagos->total() }} registros
+                @else
+                    Sin registros para mostrar.
+                @endif
             </small>
 
             {{-- paginación pequeña --}}
@@ -370,6 +395,5 @@
         </div>
     </div>
 </div>
-
 
 @endsection
