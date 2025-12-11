@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class GestionPropia3Controller extends Controller
 {
@@ -103,6 +104,92 @@ class GestionPropia3Controller extends Controller
         } catch (Throwable $e) {
             DB::rollBack();
             return back()->with('error', 'Error al cargar gestiones Propia 3: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * CARGA DE GESTIONES SMS DESDE XLSX
+     */
+    public function cargarSms(Request $request)
+    {
+        if (!session()->has('usuario')) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:xlsx'],
+        ], [], [
+            'archivo' => 'archivo XLSX',
+        ]);
+
+        try {
+            $file = $request->file('archivo');
+            $path = $file->getRealPath();
+
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows  = $sheet->toArray(null, true, true, true); // A,B,C,...
+
+            $data = [];
+            $insertados = 0;
+
+            foreach ($rows as $index => $row) {
+                // Suponemos encabezados en la primera fila
+                // DOCUMENTO | NOMBRE | TELEFONO | FECHA | MENSAJE | CAMPANIA
+                if ($index === 1) {
+                    // Opcional: validar nombres de columnas
+                    continue;
+                }
+
+                $documento = trim($row['A'] ?? '');
+                $nombre    = trim($row['B'] ?? '');
+                $telefono  = trim($row['C'] ?? '');
+                $fechaRaw  = trim($row['D'] ?? '');
+                $mensaje   = trim($row['E'] ?? '');
+                $campania  = trim($row['F'] ?? '');
+
+                // Filtrar filas vacías
+                if ($documento === '' && $telefono === '' && $mensaje === '') {
+                    continue;
+                }
+
+                $fecha = $this->parseFecha($fechaRaw) ?? date('Y-m-d H:i:s');
+
+                $data[] = [
+                    'documento'       => $documento !== '' ? $documento : null,
+                    'nombre'          => $nombre !== '' ? $nombre : null,
+                    'value2'          => 'SMS',         // tipo de gestión
+                    'value1'          => 'SMS',         // sub-tipo (puedes cambiarlo luego)
+                    'fullname'        => $nombre !== '' ? $nombre : null,
+                    'operacion'       => null,          // SMS no tiene operación asociada (por ahora)
+                    'ctl'             => null,
+                    'dateprocessed'   => $fecha,        // fecha del SMS
+                    'fechaAgenda'     => null,
+                    'callerid'        => $telefono !== '' ? $telefono : null,
+                    'comment'         => $mensaje !== '' ? $mensaje : null,
+                    'pagar_por_cuota' => null,
+                    'nroCuotas'       => null,
+                    'fecha_promesa'   => null,
+                    'campaign'        => $campania !== '' ? $campania : 'SMS',
+                ];
+            }
+
+            if (empty($data)) {
+                return back()->with('error', 'El archivo no contiene filas válidas de gestiones SMS.');
+            }
+
+            foreach (array_chunk($data, 500) as $chunk) {
+                DB::table('Gestiones_Propia3')->insert($chunk);
+                $insertados += count($chunk);
+            }
+
+            return back()->with(
+                'msg',
+                "Gestiones SMS cargadas correctamente. Total insertadas: $insertados"
+            );
+
+        } catch (Throwable $e) {
+            return back()->with('error', 'Error al cargar gestiones SMS: ' . $e->getMessage());
         }
     }
 
