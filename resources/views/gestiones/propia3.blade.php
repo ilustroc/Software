@@ -53,23 +53,6 @@
         <p class="mb-2">
             Usa la plantilla y llena las columnas exactamente con estos nombres:
         </p>
-        <ul>
-            <li><code>documento</code></li>
-            <li><code>nombre</code></li>
-            <li><code>value2</code></li>
-            <li><code>value1</code></li>
-            <li><code>fullname</code></li>
-            <li><code>operacion</code></li>
-            <li><code>ctl</code></li>
-            <li><code>dateprocessed</code></li>
-            <li><code>fechaAgenda</code></li>
-            <li><code>callerid</code></li>
-            <li><code>comment</code></li>
-            <li><code>pagar_por_cuota</code></li>
-            <li><code>nroCuotas</code></li>
-            <li><code>fecha_promesa</code></li>
-            <li><code>campaign</code></li>
-        </ul>
 
         <form method="POST"
               action="{{ route('gestiones.propia3.cargarSms') }}"
