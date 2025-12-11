@@ -13,6 +13,7 @@
     <div class="alert alert-danger mt-3">{{ session('error') }}</div>
 @endif
 
+{{-- CARGA DESDE CRM (SP) --}}
 <div class="card border-0 shadow-sm mt-3">
     <div class="card-header">
         <strong>Cargar gestiones desde CRM (spGestionKpi)</strong>
@@ -38,6 +39,49 @@
             <div class="col-md-3 d-flex align-items-end">
                 <button class="btn btn-primary w-100">
                     Cargar gestiones Propia 4
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- CARGA DE GESTIONES SMS DESDE XLSX --}}
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Cargar gestiones SMS (archivo XLSX)</strong>
+        <a href="{{ route('gestiones.propia4.plantillaSms') }}" class="btn btn-sm btn-outline-success">
+            Descargar plantilla XLSX
+        </a>
+    </div>
+    <div class="card-body">
+        <p class="mb-2">
+            Usa la plantilla y llena las columnas exactamente con estos nombres:
+        </p>
+
+        <form method="POST"
+              action="{{ route('gestiones.propia4.cargarSms') }}"
+              enctype="multipart/form-data"
+              class="row g-3">
+            @csrf
+
+            <div class="col-md-6">
+                <label class="form-label">Archivo XLSX</label>
+                <input type="file"
+                       name="archivo"
+                       accept=".xlsx"
+                       class="form-control @error('archivo') is-invalid @enderror"
+                       required>
+                @error('archivo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="text-muted">
+                    Se insertan directamente en <code>Gestiones_Propia4</code> respetando todos esos campos.
+                </small>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-success">
+                    Cargar gestiones SMS
                 </button>
             </div>
         </form>

@@ -42,9 +42,6 @@ Route::middleware('web')->group(function () {
     Route::post('/gestiones/propia3/cargar', [GestionPropia3Controller::class, 'cargar'])
         ->name('gestiones.propia3.cargar');
 
-    Route::post('/gestiones/propia3/cargar',     [GestionPropia3Controller::class, 'cargar'])
-        ->name('gestiones.propia3.cargar');
-
     Route::post('/gestiones/propia3/cargar-sms', [GestionPropia3Controller::class, 'cargarSms'])
         ->name('gestiones.propia3.cargarSms');
         
@@ -52,11 +49,14 @@ Route::middleware('web')->group(function () {
         ->name('gestiones.propia3.plantillaSms');
 
     // GESTIONES PROPIA 4 (KPI)
-    Route::get('/gestiones/propia4', [GestionPropia4Controller::class, 'form'])
+    Route::get('/gestiones/propia4',               [GestionPropia4Controller::class, 'form'])
         ->name('gestiones.propia4.form');
-
-    Route::post('/gestiones/propia4/cargar', [GestionPropia4Controller::class, 'cargar'])
+    Route::post('/gestiones/propia4/cargar',       [GestionPropia4Controller::class, 'cargar'])
         ->name('gestiones.propia4.cargar');
+    Route::get('/gestiones/propia4/plantilla-sms', [GestionPropia4Controller::class, 'plantillaSms'])
+        ->name('gestiones.propia4.plantillaSms');
+    Route::post('/gestiones/propia4/cargar-sms',   [GestionPropia4Controller::class, 'cargarSms'])
+        ->name('gestiones.propia4.cargarSms');
 
     // ABANDONADAS
     Route::get('/gestiones/abandonados', [AbandonadosController::class, 'index'])
