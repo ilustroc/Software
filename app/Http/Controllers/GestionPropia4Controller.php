@@ -29,7 +29,6 @@ class GestionPropia4Controller extends Controller
             return redirect()->route('login');
         }
 
-        // Validar fechas
         $dataReq = $request->validate([
             'desde' => ['required', 'date'],
             'hasta' => ['required', 'date', 'after_or_equal:desde'],
@@ -41,12 +40,10 @@ class GestionPropia4Controller extends Controller
         $desde = $dataReq['desde'];
         $hasta = $dataReq['hasta'];
 
-        // Rango con hora completa
         $desdeFull = $desde . ' 00:00:00';
         $hastaFull = $hasta . ' 23:59:59';
 
         try {
-            // Ejecutar SP de KPI en el CRM
             $rows = DB::connection('crm')->select(
                 'CALL spGestionKpi(?, ?)',
                 [$desdeFull, $hastaFull]
@@ -62,31 +59,30 @@ class GestionPropia4Controller extends Controller
             $data = [];
 
             foreach ($rows as $r) {
-                $montoCuota   = $this->parseMonto($r->pagar_por_cuota ?? null);
+                $importeFin   = $this->parseMonto($r->importe_financiamiento ?? null);
                 $fechaPromesa = $this->parseFecha($r->fecha_promesa ?? null);
 
                 $data[] = [
-                    'documento'       => $r->documento ?? null,
-                    'nombre'          => $r->nombre ?? null,
-                    'value2'          => $r->value2 ?? null,
-                    'value1'          => $r->value1 ?? null,
-                    'fullname'        => $r->fullname ?? null,
-                    'operacion'       => $r->operacion ?? null,
-                    'ctl'             => $r->ctl ?? null,
-                    'dateprocessed'   => $r->dateprocessed ?? null,
-                    'fechaAgenda'     => $r->fechaAgenda ?? null,
-                    'callerid'        => $r->callerid ?? null,
-                    'comment'         => $r->comment ?? null,
-                    'pagar_por_cuota' => $montoCuota,
-                    'nroCuotas'       => $r->nroCuotas ?? null,
-                    'fecha_promesa'   => $fechaPromesa,
-                    'campaign'        => $r->campaign ?? null,
+                    'cliente'              => $r->cliente ?? null,
+                    'documento'            => $r->documento ?? null,
+                    'value2'               => $r->value2 ?? null,
+                    'value1'               => $r->value1 ?? null,
+                    'fullname'             => $r->fullname ?? null,
+                    'operacion'            => $r->operacion ?? null,
+                    'entidad'              => $r->entidad ?? null,
+                    'dateprocessed'        => $r->dateprocessed ?? null,
+                    'fechaAgenda'          => $r->fechaAgenda ?? null,
+                    'callerid'             => $r->callerid ?? null,
+                    'comment'              => $r->comment ?? null,
+                    'importe_financiamiento' => $importeFin,
+                    'nroCuotas'            => $r->nroCuotas ?? null,
+                    'fecha_promesa'        => $fechaPromesa,
+                    'campaign'             => $r->campaign ?? null,
                 ];
             }
 
             DB::beginTransaction();
 
-            // Borrar el tramo en Gestiones_Propia4
             DB::table('Gestiones_Propia4')
                 ->whereBetween('dateprocessed', [$desdeFull, $hastaFull])
                 ->delete();
@@ -99,8 +95,8 @@ class GestionPropia4Controller extends Controller
 
             return back()->with(
                 'msg',
-                'Gestiones Propia 4 cargadas correctamente para el rango '
-                . $desde . ' al ' . $hasta .
+                'Gestiones Propia 4 cargadas correctamente para el rango ' .
+                $desde . ' al ' . $hasta .
                 '. Total registros: ' . count($data)
             );
 
@@ -124,18 +120,18 @@ class GestionPropia4Controller extends Controller
         $sheet->setTitle('Gestiones_SMS_P4');
 
         $headers = [
-            'A1' => 'documento',
-            'B1' => 'nombre',
+            'A1' => 'cliente',
+            'B1' => 'documento',
             'C1' => 'value2',
             'D1' => 'value1',
             'E1' => 'fullname',
             'F1' => 'operacion',
-            'G1' => 'ctl',
+            'G1' => 'entidad',
             'H1' => 'dateprocessed',
             'I1' => 'fechaAgenda',
             'J1' => 'callerid',
             'K1' => 'comment',
-            'L1' => 'pagar_por_cuota',
+            'L1' => 'importe_financiamiento',
             'M1' => 'nroCuotas',
             'N1' => 'fecha_promesa',
             'O1' => 'campaign',
@@ -148,11 +144,11 @@ class GestionPropia4Controller extends Controller
         $sheet->freezePane('A2');
 
         foreach (range('A', 'O') as $col) {
-            $sheet->getColumnDimension($col)->setWidth(18);
+            $sheet->getColumnDimension($col)->setWidth(20);
         }
 
         $fileName = 'plantilla_gestiones_sms_p4.xlsx';
-        $writer = new Xlsx($spreadsheet);
+        $writer   = new Xlsx($spreadsheet);
 
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
@@ -160,6 +156,7 @@ class GestionPropia4Controller extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
+
 
     /**
      * CARGA DE GESTIONES SMS DESDE XLSX
@@ -193,36 +190,36 @@ class GestionPropia4Controller extends Controller
                     continue;
                 }
 
-                $documento       = trim($row['A'] ?? '');
-                $nombre          = trim($row['B'] ?? '');
-                $value2          = trim($row['C'] ?? '');
-                $value1          = trim($row['D'] ?? '');
-                $fullname        = trim($row['E'] ?? '');
-                $operacion       = trim($row['F'] ?? '');
-                $ctl             = trim($row['G'] ?? '');
-                $dateprocessedRaw= trim($row['H'] ?? '');
-                $fechaAgendaRaw  = trim($row['I'] ?? '');
-                $callerid        = trim($row['J'] ?? '');
-                $comment         = trim($row['K'] ?? '');
-                $pagarRaw        = trim($row['L'] ?? '');
-                $nroCuotasRaw    = trim($row['M'] ?? '');
-                $fechaPromRaw    = trim($row['N'] ?? '');
-                $campaign        = trim($row['O'] ?? '');
+                $cliente       = trim($row['A'] ?? '');
+                $documento     = trim($row['B'] ?? '');
+                $value2        = trim($row['C'] ?? '');
+                $value1        = trim($row['D'] ?? '');
+                $fullname      = trim($row['E'] ?? '');
+                $operacion     = trim($row['F'] ?? '');
+                $entidad       = trim($row['G'] ?? '');
+                $dateprocRaw   = trim($row['H'] ?? '');
+                $fechaAgeRaw   = trim($row['I'] ?? '');
+                $callerid      = trim($row['J'] ?? '');
+                $comment       = trim($row['K'] ?? '');
+                $importeRaw    = trim($row['L'] ?? '');
+                $nroCuotasRaw  = trim($row['M'] ?? '');
+                $fechaPromRaw  = trim($row['N'] ?? '');
+                $campaign      = trim($row['O'] ?? '');
 
                 // Fila completamente vacía
                 if (
+                    $cliente === '' &&
                     $documento === '' &&
-                    $nombre === '' &&
                     $value2 === '' &&
                     $value1 === '' &&
                     $fullname === '' &&
                     $operacion === '' &&
-                    $ctl === '' &&
-                    $dateprocessedRaw === '' &&
-                    $fechaAgendaRaw === '' &&
+                    $entidad === '' &&
+                    $dateprocRaw === '' &&
+                    $fechaAgeRaw === '' &&
                     $callerid === '' &&
                     $comment === '' &&
-                    $pagarRaw === '' &&
+                    $importeRaw === '' &&
                     $nroCuotasRaw === '' &&
                     $fechaPromRaw === '' &&
                     $campaign === ''
@@ -230,28 +227,28 @@ class GestionPropia4Controller extends Controller
                     continue;
                 }
 
-                $dateprocessed = $this->parseFecha($dateprocessedRaw) ?? date('Y-m-d H:i:s');
-                $fechaAgenda   = $this->parseFecha($fechaAgendaRaw);
+                $dateprocessed = $this->parseFecha($dateprocRaw) ?? date('Y-m-d H:i:s');
+                $fechaAgenda   = $this->parseFecha($fechaAgeRaw);
                 $fechaPromesa  = $this->parseFecha($fechaPromRaw);
-                $pagarCuota    = $this->parseMonto($pagarRaw);
+                $importeFin    = $this->parseMonto($importeRaw);
                 $nroCuotas     = ($nroCuotasRaw === '' ? null : (int) $nroCuotasRaw);
 
                 $data[] = [
-                    'documento'       => $documento !== '' ? $documento : null,
-                    'nombre'          => $nombre !== '' ? $nombre : null,
-                    'value2'          => $value2 !== '' ? $value2 : null,
-                    'value1'          => $value1 !== '' ? $value1 : null,
-                    'fullname'        => $fullname !== '' ? $fullname : null,
-                    'operacion'       => $operacion !== '' ? $operacion : null,
-                    'ctl'             => $ctl !== '' ? $ctl : null,
-                    'dateprocessed'   => $dateprocessed,
-                    'fechaAgenda'     => $fechaAgenda,
-                    'callerid'        => $callerid !== '' ? $callerid : null,
-                    'comment'         => $comment !== '' ? $comment : null,
-                    'pagar_por_cuota' => $pagarCuota,
-                    'nroCuotas'       => $nroCuotas,
-                    'fecha_promesa'   => $fechaPromesa,
-                    'campaign'        => $campaign !== '' ? $campaign : null,
+                    'cliente'               => $cliente !== '' ? $cliente : null,
+                    'documento'             => $documento !== '' ? $documento : null,
+                    'value2'                => $value2 !== '' ? $value2 : null,
+                    'value1'                => $value1 !== '' ? $value1 : null,
+                    'fullname'              => $fullname !== '' ? $fullname : null,
+                    'operacion'             => $operacion !== '' ? $operacion : null,
+                    'entidad'               => $entidad !== '' ? $entidad : null,
+                    'dateprocessed'         => $dateprocessed,
+                    'fechaAgenda'           => $fechaAgenda,
+                    'callerid'              => $callerid !== '' ? $callerid : null,
+                    'comment'               => $comment !== '' ? $comment : null,
+                    'importe_financiamiento'=> $importeFin,
+                    'nroCuotas'             => $nroCuotas,
+                    'fecha_promesa'         => $fechaPromesa,
+                    'campaign'              => $campaign !== '' ? $campaign : null,
                 ];
             }
 
