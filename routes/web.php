@@ -42,9 +42,15 @@ Route::middleware('web')->group(function () {
     Route::post('/gestiones/propia3/cargar', [GestionPropia3Controller::class, 'cargar'])
         ->name('gestiones.propia3.cargar');
 
+    Route::post('/gestiones/propia3/cargar',     [GestionPropia3Controller::class, 'cargar'])
+        ->name('gestiones.propia3.cargar');
+
     Route::post('/gestiones/propia3/cargar-sms', [GestionPropia3Controller::class, 'cargarSms'])
         ->name('gestiones.propia3.cargarSms');
         
+    Route::get('/gestiones/propia3/plantilla-sms', [GestionPropia3Controller::class, 'plantillaSms'])
+        ->name('gestiones.propia3.plantillaSms');
+
     // GESTIONES PROPIA 4 (KPI)
     Route::get('/gestiones/propia4', [GestionPropia4Controller::class, 'form'])
         ->name('gestiones.propia4.form');

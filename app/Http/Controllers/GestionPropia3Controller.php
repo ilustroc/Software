@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class GestionPropia3Controller extends Controller
@@ -107,6 +109,57 @@ class GestionPropia3Controller extends Controller
         }
     }
 
+    public function plantillaSms()
+    {
+        if (!session()->has('usuario')) {
+            return redirect()->route('login');
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Gestiones_SMS_P3');
+
+        $headers = [
+            'A1' => 'documento',
+            'B1' => 'nombre',
+            'C1' => 'value2',
+            'D1' => 'value1',
+            'E1' => 'fullname',
+            'F1' => 'operacion',
+            'G1' => 'ctl',
+            'H1' => 'dateprocessed',
+            'I1' => 'fechaAgenda',
+            'J1' => 'callerid',
+            'K1' => 'comment',
+            'L1' => 'pagar_por_cuota',
+            'M1' => 'nroCuotas',
+            'N1' => 'fecha_promesa',
+            'O1' => 'campaign',
+        ];
+
+        foreach ($headers as $cell => $text) {
+            $sheet->setCellValue($cell, $text);
+        }
+
+        // Congelar fila de encabezado
+        $sheet->freezePane('A2');
+
+        // Ancho básico de columnas
+        foreach (range('A', 'O') as $col) {
+            $sheet->getColumnDimension($col)->setWidth(18);
+        }
+
+        $fileName = 'plantilla_gestiones_sms_p3.xlsx';
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     /**
      * CARGA DE GESTIONES SMS DESDE XLSX
      */
@@ -134,43 +187,71 @@ class GestionPropia3Controller extends Controller
             $insertados = 0;
 
             foreach ($rows as $index => $row) {
-                // Suponemos encabezados en la primera fila
-                // DOCUMENTO | NOMBRE | TELEFONO | FECHA | MENSAJE | CAMPANIA
+                // Fila 1 = encabezados (documento, nombre, value2, ...)
                 if ($index === 1) {
-                    // Opcional: validar nombres de columnas
                     continue;
                 }
 
-                $documento = trim($row['A'] ?? '');
-                $nombre    = trim($row['B'] ?? '');
-                $telefono  = trim($row['C'] ?? '');
-                $fechaRaw  = trim($row['D'] ?? '');
-                $mensaje   = trim($row['E'] ?? '');
-                $campania  = trim($row['F'] ?? '');
+                $documento       = trim($row['A'] ?? '');
+                $nombre          = trim($row['B'] ?? '');
+                $value2          = trim($row['C'] ?? '');
+                $value1          = trim($row['D'] ?? '');
+                $fullname        = trim($row['E'] ?? '');
+                $operacion       = trim($row['F'] ?? '');
+                $ctl             = trim($row['G'] ?? '');
+                $dateprocessedRaw= trim($row['H'] ?? '');
+                $fechaAgendaRaw  = trim($row['I'] ?? '');
+                $callerid        = trim($row['J'] ?? '');
+                $comment         = trim($row['K'] ?? '');
+                $pagarRaw        = trim($row['L'] ?? '');
+                $nroCuotasRaw    = trim($row['M'] ?? '');
+                $fechaPromRaw    = trim($row['N'] ?? '');
+                $campaign        = trim($row['O'] ?? '');
 
-                // Filtrar filas vacías
-                if ($documento === '' && $telefono === '' && $mensaje === '') {
+                // Si la fila está completamente vacía, la saltamos
+                if (
+                    $documento === '' &&
+                    $nombre === '' &&
+                    $value2 === '' &&
+                    $value1 === '' &&
+                    $fullname === '' &&
+                    $operacion === '' &&
+                    $ctl === '' &&
+                    $dateprocessedRaw === '' &&
+                    $fechaAgendaRaw === '' &&
+                    $callerid === '' &&
+                    $comment === '' &&
+                    $pagarRaw === '' &&
+                    $nroCuotasRaw === '' &&
+                    $fechaPromRaw === '' &&
+                    $campaign === ''
+                ) {
                     continue;
                 }
 
-                $fecha = $this->parseFecha($fechaRaw) ?? date('Y-m-d H:i:s');
+                // Parseos
+                $dateprocessed = $this->parseFecha($dateprocessedRaw) ?? date('Y-m-d H:i:s');
+                $fechaAgenda   = $this->parseFecha($fechaAgendaRaw);
+                $fechaPromesa  = $this->parseFecha($fechaPromRaw);
+                $pagarCuota    = $this->parseMonto($pagarRaw);
+                $nroCuotas     = ($nroCuotasRaw === '' ? null : (int) $nroCuotasRaw);
 
                 $data[] = [
                     'documento'       => $documento !== '' ? $documento : null,
                     'nombre'          => $nombre !== '' ? $nombre : null,
-                    'value2'          => 'SMS',         // tipo de gestión
-                    'value1'          => 'SMS',         // sub-tipo (puedes cambiarlo luego)
-                    'fullname'        => $nombre !== '' ? $nombre : null,
-                    'operacion'       => null,          // SMS no tiene operación asociada (por ahora)
-                    'ctl'             => null,
-                    'dateprocessed'   => $fecha,        // fecha del SMS
-                    'fechaAgenda'     => null,
-                    'callerid'        => $telefono !== '' ? $telefono : null,
-                    'comment'         => $mensaje !== '' ? $mensaje : null,
-                    'pagar_por_cuota' => null,
-                    'nroCuotas'       => null,
-                    'fecha_promesa'   => null,
-                    'campaign'        => $campania !== '' ? $campania : 'SMS',
+                    'value2'          => $value2 !== '' ? $value2 : null,
+                    'value1'          => $value1 !== '' ? $value1 : null,
+                    'fullname'        => $fullname !== '' ? $fullname : null,
+                    'operacion'       => $operacion !== '' ? $operacion : null,
+                    'ctl'             => $ctl !== '' ? $ctl : null,
+                    'dateprocessed'   => $dateprocessed,
+                    'fechaAgenda'     => $fechaAgenda,
+                    'callerid'        => $callerid !== '' ? $callerid : null,
+                    'comment'         => $comment !== '' ? $comment : null,
+                    'pagar_por_cuota' => $pagarCuota,
+                    'nroCuotas'       => $nroCuotas,
+                    'fecha_promesa'   => $fechaPromesa,
+                    'campaign'        => $campaign !== '' ? $campaign : null,
                 ];
             }
 

@@ -43,21 +43,32 @@
 
 {{-- CARGA DE GESTIONES SMS DESDE XLSX --}}
 <div class="card border-0 shadow-sm mt-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Cargar gestiones SMS (archivo XLSX)</strong>
+        <a href="{{ route('gestiones.propia3.plantillaSms') }}" class="btn btn-sm btn-outline-success">
+            Descargar plantilla XLSX
+        </a>
     </div>
     <div class="card-body">
         <p class="mb-2">
-            Sube un Excel <strong>.xlsx</strong> con las gestiones de SMS.
-            Formato esperado (hoja 1):
+            Usa la plantilla y llena las columnas exactamente con estos nombres:
         </p>
         <ul>
-            <li><code>DOCUMENTO</code> (DNI)</li>
-            <li><code>NOMBRE</code></li>
-            <li><code>TELEFONO</code></li>
-            <li><code>FECHA</code> (YYYY-MM-DD o con hora)</li>
-            <li><code>MENSAJE</code></li>
-            <li><code>CAMPANIA</code> (opcional)</li>
+            <li><code>documento</code></li>
+            <li><code>nombre</code></li>
+            <li><code>value2</code></li>
+            <li><code>value1</code></li>
+            <li><code>fullname</code></li>
+            <li><code>operacion</code></li>
+            <li><code>ctl</code></li>
+            <li><code>dateprocessed</code></li>
+            <li><code>fechaAgenda</code></li>
+            <li><code>callerid</code></li>
+            <li><code>comment</code></li>
+            <li><code>pagar_por_cuota</code></li>
+            <li><code>nroCuotas</code></li>
+            <li><code>fecha_promesa</code></li>
+            <li><code>campaign</code></li>
         </ul>
 
         <form method="POST"
@@ -77,7 +88,7 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
                 <small class="text-muted">
-                    Se insertan como gestiones tipo <strong>SMS</strong> en <code>Gestiones_Propia3</code>.
+                    Se insertan directamente en <code>Gestiones_Propia3</code> respetando todos esos campos.
                 </small>
             </div>
 
