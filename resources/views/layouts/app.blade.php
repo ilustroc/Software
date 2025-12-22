@@ -1,387 +1,378 @@
-<!DOCTYPE html>
+{{-- resources/views/layouts/app.blade.php --}}
+<!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'ImpulseGo Reportes')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    {{-- BOOTSTRAP --}}
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    {{-- Tailwind (CDN para arrancar rápido) --}}
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    {{-- ICONOS --}}
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    {{-- Alpine.js (para acordeones / sidebar mobile) --}}
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <style>
-        :root {
-            --impulse-primary: #0d6efd;
-            --impulse-dark: #111827;
-            --impulse-dark-soft: #1f2933;
-        }
-
-        body {
-            font-size: 0.92rem;
-        }
-
-        .app-shell {
-            min-height: 100vh;
-            background-color: #f3f4f6;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--impulse-dark) 0%, #020617 60%);
-            color: #e5e7eb;
-        }
-
-        .sidebar-brand {
-            font-weight: 600;
-            font-size: 1.1rem;
-            letter-spacing: 0.03em;
-        }
-
-        .sidebar-subtitle {
-            font-size: 0.75rem;
-            color: #9ca3af;
-        }
-
-        .sidebar .accordion-item {
-            border: none;
-            background-color: transparent;
-        }
-
-        .sidebar .accordion-button {
-            padding: 0.55rem 0;
-            font-size: 0.86rem;
-            background-color: transparent;
-            color: #e5e7eb;
-            box-shadow: none;
-        }
-
-        .sidebar .accordion-button::after {
-            filter: invert(1) opacity(0.7);
-        }
-
-        .sidebar .accordion-button:not(.collapsed) {
-            color: #ffffff;
-        }
-
-        .sidebar .accordion-body {
-            padding: 0.25rem 0 0.75rem 0;
-        }
-
-        .nav-link-soft {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.30rem 0.5rem;
-            border-radius: 0.35rem;
-            color: #9ca3af;
-            text-decoration: none;
-            transition: background-color 0.15s ease, color 0.15s ease;
-        }
-
-        .nav-link-soft:hover {
-            background-color: rgba(148, 163, 184, 0.16);
-            color: #e5e7eb;
-        }
-
-        .nav-link-soft.active {
-            background-color: rgba(13, 110, 253, 0.18);
-            color: #ffffff;
-        }
-
-        .sidebar-footer {
-            border-top: 1px solid rgba(55, 65, 81, 0.9);
-            padding-top: 1rem;
-            margin-top: auto;
-        }
-
-        /* MAIN */
-        .main-content {
-            flex: 1;
-            padding: 1.5rem 1.75rem;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .topbar-title {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: #111827;
-        }
-
-        .topbar-subtitle {
-            font-size: 0.8rem;
-            color: #6b7280;
-        }
-
-        .content-card {
-            border-radius: 0.75rem;
-            border: 1px solid #e5e7eb;
-            background-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-            padding: 1.25rem 1.5rem;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                min-height: auto;
-            }
-            .app-shell {
-                flex-direction: column;
-            }
-        }
-    </style>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @stack('styles')
 </head>
-<body>
 
-<div class="app-shell d-flex">
-    {{-- SIDEBAR IZQUIERDO --}}
-    <aside class="sidebar d-flex flex-column p-3">
+@php
+    // Abrir acordeones según la ruta actual
+    $openGestiones = request()->routeIs('gestiones.*');
+    $openPagos     = request()->routeIs('pagos.*');
+    $openCartera   = request()->routeIs('cartera.*') || request()->routeIs('cargas.cartera.*');
+    $openReportes  = request()->routeIs('reportes.*');
+@endphp
 
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <div>
-                <div class="sidebar-brand">ImpulseGo</div>
-                <div class="sidebar-subtitle">Panel de reportes</div>
-            </div>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                v1.0
-            </span>
-        </div>
+<body class="bg-slate-50 text-slate-900">
+<div
+    x-data="{
+        mobileOpen: false,
+        openGestiones: {{ $openGestiones ? 'true' : 'false' }},
+        openPagos: {{ $openPagos ? 'true' : 'false' }},
+        openCartera: {{ $openCartera ? 'true' : 'false' }},
+        openReportes: {{ $openReportes ? 'true' : 'false' }},
+    }"
+    class="min-h-screen"
+>
 
-        @if(session()->has('usuario'))
-            <div class="mb-3 small rounded border border-secondary-subtle p-2 bg-dark bg-opacity-25">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="rounded-circle bg-success d-inline-block"
-                          style="width: 7px; height: 7px;"></span>
-                    <span class="fw-semibold">{{ session('usuario') }}</span>
+    {{-- Overlay mobile --}}
+    <div
+        x-show="mobileOpen"
+        x-transition.opacity
+        class="fixed inset-0 z-40 bg-slate-900/50 lg:hidden"
+        @click="mobileOpen = false"
+        style="display:none;"
+    ></div>
+
+    <div class="flex min-h-screen">
+
+        {{-- SIDEBAR --}}
+        <aside
+            class="fixed inset-y-0 left-0 z-50 w-[280px] lg:static lg:z-auto
+                   -translate-x-full lg:translate-x-0 transition-transform duration-200
+                   bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100"
+            :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'"
+        >
+            <div class="h-full flex flex-col px-4 py-4">
+
+                {{-- Brand --}}
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-lg font-semibold tracking-tight">ImpulseGo</div>
+                        <div class="text-xs text-slate-400">Panel de reportes</div>
+                    </div>
+
+                    <div class="shrink-0">
+                        <span class="inline-flex items-center rounded-lg border border-sky-400/30 bg-sky-500/10 px-2 py-1 text-xs font-semibold text-sky-200">
+                            v1.0
+                        </span>
+                    </div>
                 </div>
-            </div>
-        @endif
 
-        {{-- Menú acordeón --}}
-        <div class="accordion" id="accordionMenu">
+                {{-- User pill --}}
+                @if(session()->has('usuario'))
+                    <div class="mt-4 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            <span class="text-sm font-semibold">{{ session('usuario') }}</span>
+                        </div>
+                    </div>
+                @endif
 
-            {{-- Cargas Gestiones --}}
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingGestiones">
-                    <button class="accordion-button collapsed"
+                {{-- Menú --}}
+                <nav class="mt-4 flex-1 space-y-1 overflow-y-auto pr-1">
+
+                    {{-- Helper classes --}}
+                    @php
+                        $linkBase = "group flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition";
+                        $linkIdle = "text-slate-300 hover:text-white hover:bg-white/5";
+                        $linkActive = "bg-white/10 text-white ring-1 ring-white/10";
+                        $subLinkBase = "flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] transition";
+                        $subIdle = "text-slate-300/90 hover:text-white hover:bg-white/5";
+                        $subActive = "bg-sky-500/10 text-sky-100 ring-1 ring-sky-400/20";
+                    @endphp
+
+                    {{-- Cargas de Gestiones --}}
+                    <div class="rounded-2xl">
+                        <button
                             type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#collapseGestiones"
-                            aria-expanded="false"
-                            aria-controls="collapseGestiones">
-                        <i class="bi bi-telephone-outbound me-1"></i>
-                        Cargas de Gestiones
-                    </button>
-                </h2>
-                <div id="collapseGestiones"
-                     class="accordion-collapse collapse"
-                     aria-labelledby="headingGestiones"
-                     data-bs-parent="#accordionMenu">
-                    <div class="accordion-body">
-                        <ul class="nav flex-column small">
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('gestiones.propia12.form') }}"
-                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia12.*') ? 'active' : '' }}">
-                                    <i class="bi bi-folder2-open"></i>
-                                    Propia 1 y 2
-                                </a>
-                            </li>
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('gestiones.propia3.form') }}"
-                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia3.*') ? 'active' : '' }}">
-                                    <i class="bi bi-folder2-open"></i>
-                                    Propia 3
-                                </a>
-                            </li>
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('gestiones.propia4.form') }}"
-                                   class="nav-link-soft {{ request()->routeIs('gestiones.propia4.*') ? 'active' : '' }}">
-                                    <i class="bi bi-folder2-open"></i>
-                                    Propia 4
-                                </a>
-                            </li>
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('gestiones.amd') }}"
-                                   class="nav-link-soft {{ request()->routeIs('gestiones.amd') ? 'active' : '' }}">
-                                    <i class="bi bi-folder2-open"></i>
-                                    AMD
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('gestiones.abandonados') }}"
-                                   class="nav-link-soft {{ request()->routeIs('gestiones.abandonados') ? 'active' : '' }}">
-                                    <i class="bi bi-folder2-open"></i>
-                                    Abandonados
-                                </a>
-                            </li>
-                        </ul>
+                            class="{{ $linkBase }} w-full justify-between {{ $openGestiones ? $linkActive : $linkIdle }}"
+                            @click="openGestiones = !openGestiones"
+                        >
+                            <span class="flex items-center gap-2">
+                                {{-- icon --}}
+                                <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
+                                    <path d="M16 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M9 6h6M9 10h6M9 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span class="font-semibold">Cargas de Gestiones</span>
+                            </span>
+
+                            <svg class="h-4 w-4 transition" :class="openGestiones ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="openGestiones" x-collapse style="display:none;" class="mt-1 pl-1 space-y-1">
+                            <a href="{{ route('gestiones.propia12.form') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('gestiones.propia12.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 1 y 2
+                            </a>
+                            <a href="{{ route('gestiones.propia3.form') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('gestiones.propia3.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 3
+                            </a>
+                            <a href="{{ route('gestiones.propia4.form') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('gestiones.propia4.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 4
+                            </a>
+                            <a href="{{ route('gestiones.amd') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('gestiones.amd') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                AMD
+                            </a>
+                            <a href="{{ route('gestiones.abandonados') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('gestiones.abandonados') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Abandonados
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Cargas de Pagos --}}
+                    <div class="rounded-2xl">
+                        <button
+                            type="button"
+                            class="{{ $linkBase }} w-full justify-between {{ $openPagos ? $linkActive : $linkIdle }}"
+                            @click="openPagos = !openPagos"
+                        >
+                            <span class="flex items-center gap-2">
+                                <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 7h18v10H3V7Z" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M7 11h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span class="font-semibold">Cargas de Pagos</span>
+                            </span>
+                            <svg class="h-4 w-4 transition" :class="openPagos ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="openPagos" x-collapse style="display:none;" class="mt-1 pl-1 space-y-1">
+                            <a href="{{ route('pagos.propia12.index') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('pagos.propia12.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 1 y 2
+                            </a>
+                            <a href="{{ route('pagos.propia3.index') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('pagos.propia3.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 3
+                            </a>
+                            <a href="{{ route('pagos.propia4.index') }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('pagos.propia4.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 4
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Cargas de Cartera --}}
+                    <div class="rounded-2xl">
+                        <button
+                            type="button"
+                            class="{{ $linkBase }} w-full justify-between {{ $openCartera ? $linkActive : $linkIdle }}"
+                            @click="openCartera = !openCartera"
+                        >
+                            <span class="flex items-center gap-2">
+                                <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span class="font-semibold">Cargas de Cartera</span>
+                            </span>
+                            <svg class="h-4 w-4 transition" :class="openCartera ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="openCartera" x-collapse style="display:none;" class="mt-1 pl-1 space-y-1">
+                            <a href="#"
+                               class="{{ $subLinkBase }} {{ $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 1 y 2
+                            </a>
+                            <a href="#"
+                               class="{{ $subLinkBase }} {{ $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 3
+                            </a>
+                            <a href="#"
+                               class="{{ $subLinkBase }} {{ $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Propia 4
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- REPORTES (NUEVO) --}}
+                    <div class="rounded-2xl">
+                        <button
+                            type="button"
+                            class="{{ $linkBase }} w-full justify-between {{ $openReportes ? $linkActive : $linkIdle }}"
+                            @click="openReportes = !openReportes"
+                        >
+                            <span class="flex items-center gap-2">
+                                <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M8 11h8M8 15h6M8 7h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span class="font-semibold">Reportes</span>
+                            </span>
+                            <svg class="h-4 w-4 transition" :class="openReportes ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="openReportes" x-collapse style="display:none;" class="mt-1 pl-1 space-y-2">
+
+                            {{-- Subtitulo --}}
+                            <div class="px-3 pt-1 text-[11px] uppercase tracking-wider text-slate-400">
+                                Reporte de Gestiones
+                            </div>
+
+                            {{-- Para evitar error si aún no existen rutas, usamos Route::has --}}
+                            @php
+                                $rg12 = 'reportes.gestiones.propia12';
+                                $rg3  = 'reportes.gestiones.propia3';
+                                $rg4  = 'reportes.gestiones.propia4';
+                            @endphp
+
+                            <a href="{{ \Illuminate\Support\Facades\Route::has($rg12) ? route($rg12) : '#' }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs($rg12) ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Gestiones Propia 1 y 2
+                            </a>
+                            <a href="{{ \Illuminate\Support\Facades\Route::has($rg3) ? route($rg3) : '#' }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs($rg3) ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Gestiones Propia 3
+                            </a>
+                            <a href="{{ \Illuminate\Support\Facades\Route::has($rg4) ? route($rg4) : '#' }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs($rg4) ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Gestiones Propia 4
+                            </a>
+
+                            <div class="px-3 pt-2 text-[11px] uppercase tracking-wider text-slate-400">
+                                Reporte de Pagos
+                            </div>
+
+                            @php
+                                $rp = 'reportes.pagos.index';
+                            @endphp
+
+                            <a href="{{ \Illuminate\Support\Facades\Route::has($rp) ? route($rp) : '#' }}"
+                               class="{{ $subLinkBase }} {{ request()->routeIs('reportes.pagos.*') ? $subActive : $subIdle }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
+                                Reporte de Pagos
+                            </a>
+
+                        </div>
+                    </div>
+
+                    {{-- PARÁMETROS --}}
+                    <div class="pt-3">
+                        <div class="px-3 text-[11px] uppercase tracking-wider text-slate-500">Parámetros</div>
+
+                        <a href="{{ route('parametros.tipificaciones.index') }}"
+                           class="{{ $linkBase }} mt-2 {{ request()->routeIs('parametros.tipificaciones.*') ? $linkActive : $linkIdle }}">
+                            <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span class="font-semibold">Tipificaciones</span>
+                        </a>
+                    </div>
+
+                </nav>
+
+                {{-- Footer / Logout --}}
+                @if(session()->has('usuario'))
+                    <div class="pt-3 border-t border-white/10">
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-xl
+                                       border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold
+                                       text-white hover:bg-white/10 transition"
+                            >
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                    <path d="M10 17l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M21 19V5a2 2 0 0 0-2-2h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Cerrar sesión
+                            </button>
+                        </form>
+                    </div>
+                @endif
+
+            </div>
+        </aside>
+
+        {{-- MAIN --}}
+        <main class="flex-1 lg:pl-0 lg:ml-0">
+            {{-- Topbar --}}
+            <div class="sticky top-0 z-30 border-b border-slate-200 bg-slate-50/80 backdrop-blur">
+                <div class="mx-auto max-w-7xl px-4 py-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            {{-- Mobile button --}}
+                            <button
+                                type="button"
+                                class="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+                                @click="mobileOpen = true"
+                            >
+                                <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+
+                            <div>
+                                <div class="text-base font-semibold text-slate-900">
+                                    @yield('page_title', 'Panel de control')
+                                </div>
+                                <div class="text-sm text-slate-500">
+                                    @yield('page_subtitle', 'Gestión de cargas y reportes de propia.')
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hidden sm:flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+                                {{ now()->format('d/m/Y') }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Cargas Pagos --}}
-            <div class="accordion-item mt-1">
-                <h2 class="accordion-header" id="headingPagos">
-                    <button class="accordion-button collapsed"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#collapsePagos"
-                            aria-expanded="false"
-                            aria-controls="collapsePagos">
-                        <i class="bi bi-cash-coin me-1"></i>
-                        Cargas de Pagos
-                    </button>
-                </h2>
-                <div id="collapsePagos"
-                     class="accordion-collapse collapse"
-                     aria-labelledby="headingPagos"
-                     data-bs-parent="#accordionMenu">
-                    <div class="accordion-body">
-                        <ul class="nav flex-column small">
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('pagos.propia12.index') }}"
-                                   class="nav-link-soft {{ request()->routeIs('pagos.propia12.*') ? 'active' : '' }}">
-                                    <i class="bi bi-credit-card"></i>
-                                    Propia 1 y 2
-                                </a>
-                            </li>
-                            <li class="nav-item mb-1">
-                                <a href="{{ route('pagos.propia3.index') }}"
-                                   class="nav-link-soft">
-                                    <i class="bi bi-credit-card"></i>
-                                    Propia 3
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('pagos.propia4.index') }}"
-                                   class="nav-link-soft">
-                                    <i class="bi bi-credit-card"></i>
-                                    Propia 4
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+            {{-- Content --}}
+            <div class="mx-auto max-w-7xl px-4 py-6">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    @yield('content')
                 </div>
             </div>
+        </main>
 
-            {{-- Cargas Cartera --}}
-            <div class="accordion-item mt-1">
-                <h2 class="accordion-header" id="headingCartera">
-                    <button class="accordion-button collapsed"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#collapseCartera"
-                            aria-expanded="false"
-                            aria-controls="collapseCartera">
-                        <i class="bi bi-database-up me-1"></i>
-                        Cargas de Cartera
-                    </button>
-                </h2>
-                <div id="collapseCartera"
-                     class="accordion-collapse collapse"
-                     aria-labelledby="headingCartera"
-                     data-bs-parent="#accordionMenu">
-                    <div class="accordion-body">
-                        <ul class="nav flex-column small">
-                            <li class="nav-item mb-1">
-                                <a href="#"
-                                   class="nav-link-soft">
-                                    <i class="bi bi-database-fill"></i>
-                                    Propia 1 y 2
-                                </a>
-                            </li>
-                            <li class="nav-item mb-1">
-                                <a href="#"
-                                   class="nav-link-soft">
-                                    <i class="bi bi-database-fill"></i>
-                                    Propia 3
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#"
-                                   class="nav-link-soft">
-                                    <i class="bi bi-database-fill"></i>
-                                    Propia 4
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+    </div>
 
-        </div> {{-- /accordion --}}
-
-        {{-- BLOQUE PARÁMETROS --}}
-        <div class="mt-3">
-            <span class="nav-link text-uppercase small text-muted px-0">
-                Parámetros
-            </span>
-
-            <ul class="nav flex-column small mt-1">
-                <li class="nav-item">
-                    <a href="{{ route('parametros.tipificaciones.index') }}"
-                       class="nav-link-soft {{ request()->routeIs('parametros.tipificaciones.*') ? 'active' : '' }}">
-                        <i class="bi bi-card-checklist me-1"></i>
-                        Tipificaciones
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        {{-- FOOTER SIDEBAR --}}
-        @if(session()->has('usuario'))
-            <div class="sidebar-footer mt-3">
-                <form action="{{ route('logout') }}" method="POST" class="d-grid gap-2">
-                    @csrf
-                    <button class="btn btn-outline-light btn-sm" type="submit">
-                        <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
-                    </button>
-                </form>
-            </div>
-        @endif
-
-    </aside>
-
-    {{-- CONTENIDO PRINCIPAL --}}
-    <main class="main-content">
-
-        {{-- BARRA SUPERIOR DEL CONTENIDO --}}
-        <div class="topbar">
-            <div>
-                <div class="topbar-title">
-                    @yield('page_title', 'Panel de control')
-                </div>
-                <div class="topbar-subtitle">
-                    @yield('page_subtitle', 'Gestión de cargas y reportes de propia.')
-                </div>
-            </div>
-            <div class="d-none d-md-flex align-items-center gap-2">
-                <span class="badge text-bg-light border">
-                    {{ now()->format('d/m/Y') }}
-                </span>
-            </div>
-        </div>
-
-        {{-- CONTENIDO ENVUELTO EN CARD --}}
-        <div class="content-card">
-            @yield('content')
-        </div>
-    </main>
+    @stack('scripts')
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
