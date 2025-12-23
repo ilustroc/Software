@@ -24,7 +24,7 @@ class AbandonadosController extends Controller
             ->whereBetween('fecha_evento', [$desdeFull, $hastaFull])
             ->orderBy('fecha_evento', 'desc');
 
-        $registros = $query->paginate(20)->appends($request->query());
+        $registros = $query->paginate(10)->appends($request->query());
 
         return view('gestiones.abandonados', compact('registros', 'desde', 'hasta'));
     }

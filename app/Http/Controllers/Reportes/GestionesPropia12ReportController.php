@@ -42,7 +42,7 @@ class GestionesPropia12ReportController extends Controller
         }
 
         $registros = $q->orderByDesc('dateprocessed')
-            ->paginate(25)
+            ->paginate(10)
             ->appends($request->query());
 
         return view('reportes.gestiones.propia12', compact(

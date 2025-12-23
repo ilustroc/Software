@@ -24,7 +24,7 @@ class AmdController extends Controller
             ->whereBetween('calldate', [$desdeFull, $hastaFull])
             ->orderBy('calldate', 'desc');
 
-        $registros = $query->paginate(20)->appends($request->query());
+        $registros = $query->paginate(10)->appends($request->query());
 
         return view('gestiones.amd', compact('registros', 'desde', 'hasta'));
     }
