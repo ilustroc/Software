@@ -24,7 +24,7 @@
     $openReportes  = request()->routeIs('reportes.*');
 @endphp
 
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50 text-slate-900 overflow-y-scroll">
 <div
     x-data="{
         mobileOpen: false,
@@ -175,43 +175,6 @@
                             </a>
                             <a href="{{ route('pagos.propia4.index') }}"
                                class="{{ $subLinkBase }} {{ request()->routeIs('pagos.propia4.*') ? $subActive : $subIdle }}">
-                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
-                                Propia 4
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Cargas de Cartera --}}
-                    <div class="rounded-2xl">
-                        <button
-                            type="button"
-                            class="{{ $linkBase }} w-full justify-between {{ $openCartera ? $linkActive : $linkIdle }}"
-                            @click="openCartera = !openCartera"
-                        >
-                            <span class="flex items-center gap-2">
-                                <svg class="h-4 w-4 opacity-90" viewBox="0 0 24 24" fill="none">
-                                    <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                <span class="font-semibold">Cargas de Cartera</span>
-                            </span>
-                            <svg class="h-4 w-4 transition" :class="openCartera ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-
-                        <div x-show="openCartera" x-collapse style="display:none;" class="mt-1 pl-1 space-y-1">
-                            <a href="#"
-                               class="{{ $subLinkBase }} {{ $subIdle }}">
-                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
-                                Propia 1 y 2
-                            </a>
-                            <a href="#"
-                               class="{{ $subLinkBase }} {{ $subIdle }}">
-                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
-                                Propia 3
-                            </a>
-                            <a href="#"
-                               class="{{ $subLinkBase }} {{ $subIdle }}">
                                 <span class="h-1.5 w-1.5 rounded-full bg-slate-400/70"></span>
                                 Propia 4
                             </a>

@@ -1,86 +1,120 @@
 @extends('layouts.app')
 
-@section('title', 'Gestiones Cartera Propia 3')
+@section('title', 'Gestiones - Cartera Propia 3')
+@section('page_title', 'Gestiones - Cartera Propia 3 (Zigor)')
+@section('page_subtitle', 'Carga desde CRM (SP) o carga masiva de gestiones SMS desde XLSX.')
 
 @section('content')
-<h3>Gestiones - Cartera Propia 3 (Zigor)</h3>
+<div class="space-y-5">
 
-@if(session('msg'))
-    <div class="alert alert-success mt-3">{{ session('msg') }}</div>
-@endif
+    {{-- ALERTAS --}}
+    @if(session('msg'))
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div class="flex items-start gap-2">
+                <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-xs">✓</span>
+                <div class="flex-1">
+                    <div class="font-semibold">Listo</div>
+                    <div>{{ session('msg') }}</div>
+                </div>
+            </div>
+        </div>
+    @endif
 
-@if(session('error'))
-    <div class="alert alert-danger mt-3">{{ session('error') }}</div>
-@endif
+    @if(session('error'))
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div class="flex items-start gap-2">
+                <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-xs">!</span>
+                <div class="flex-1">
+                    <div class="font-semibold">Atención</div>
+                    <div>{{ session('error') }}</div>
+                </div>
+            </div>
+        </div>
+    @endif
 
-{{-- CARGA DESDE CRM (SP) --}}
-<div class="card border-0 shadow-sm mt-3">
-    <div class="card-header">
-        <strong>Cargar gestiones desde CRM (spGestionZigor)</strong>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="{{ route('gestiones.propia3.cargar') }}" class="row g-3">
-            @csrf
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-            <div class="col-md-3">
-                <label class="form-label">Desde</label>
-                <input type="date" name="desde" value="{{ old('desde', date('Y-m-d')) }}" class="form-control" required>
+        {{-- CARGA DESDE CRM --}}
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900">Cargar gestiones desde CRM</div>
+                    <div class="mt-0.5 text-xs text-slate-500">
+                        Ejecuta <span class="font-semibold text-slate-700">spGestionZigor(desde, hasta)</span>.
+                    </div>
+                </div>
+                <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+                    SP
+                </span>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label">Hasta</label>
-                <input type="date" name="hasta" value="{{ old('hasta', date('Y-m-d')) }}" class="form-control" required>
+            <form method="POST" action="{{ route('gestiones.propia3.cargar') }}" class="mt-4">
+                @csrf
+
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700">Desde</label>
+                        <input type="date" name="desde"
+                               value="{{ old('desde', now()->toDateString()) }}"
+                               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-100"
+                               required>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700">Hasta</label>
+                        <input type="date" name="hasta"
+                               value="{{ old('hasta', now()->toDateString()) }}"
+                               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-100"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-end">
+                    <button class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">
+                        Cargar gestiones
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- CARGA SMS XLSX --}}
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900">Cargar gestiones SMS (XLSX)</div>
+                    <div class="mt-0.5 text-xs text-slate-500">
+                        Inserta en <span class="font-semibold text-slate-700">Gestiones_Propia3</span> respetando la plantilla.
+                    </div>
+                </div>
+
+                <a href="{{ route('gestiones.propia3.plantillaSms') }}"
+                   class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Descargar plantilla
+                </a>
             </div>
 
-            <div class="col-md-3 d-flex align-items-end">
-                <button class="btn btn-primary w-100">
-                    Cargar gestiones Propia 3
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+            <form method="POST"
+                  action="{{ route('gestiones.propia3.cargarSms') }}"
+                  enctype="multipart/form-data"
+                  class="mt-4">
+                @csrf
 
-{{-- CARGA DE GESTIONES SMS DESDE XLSX --}}
-<div class="card border-0 shadow-sm mt-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Cargar gestiones SMS (archivo XLSX)</strong>
-        <a href="{{ route('gestiones.propia3.plantillaSms') }}" class="btn btn-sm btn-outline-success">
-            Descargar plantilla XLSX
-        </a>
-    </div>
-    <div class="card-body">
-        <p class="mb-2">
-            Usa la plantilla y llena las columnas exactamente con estos nombres:
-        </p>
-
-        <form method="POST"
-              action="{{ route('gestiones.propia3.cargarSms') }}"
-              enctype="multipart/form-data"
-              class="row g-3">
-            @csrf
-
-            <div class="col-md-6">
-                <label class="form-label">Archivo XLSX</label>
-                <input type="file"
-                       name="archivo"
-                       accept=".xlsx"
-                       class="form-control @error('archivo') is-invalid @enderror"
+                <label class="text-xs font-semibold text-slate-700">Archivo XLSX</label>
+                <input type="file" name="archivo" accept=".xlsx"
+                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-100 @error('archivo') border-red-300 @enderror"
                        required>
-                @error('archivo')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                <small class="text-muted">
-                    Se insertan directamente en <code>Gestiones_Propia3</code> respetando todos esos campos.
-                </small>
-            </div>
+                @error('archivo') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
 
-            <div class="col-12">
-                <button type="submit" class="btn btn-success">
-                    Cargar gestiones SMS
-                </button>
-            </div>
-        </form>
+                <div class="mt-4 flex items-center justify-between gap-3">
+                    <div class="text-xs text-slate-500">Solo .xlsx, columnas exactas.</div>
+                    <button type="submit"
+                            class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+                        Cargar SMS
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div>
 </div>
 @endsection

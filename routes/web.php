@@ -11,6 +11,10 @@ use App\Http\Controllers\GestionPropia3Controller;
 use App\Http\Controllers\GestionPropia4Controller;
 use App\Http\Controllers\TipificacionController;
 use App\Http\Controllers\AmdController;
+use App\Http\Controllers\Reportes\GestionesPropia12ReportController;
+use App\Http\Controllers\Reportes\GestionesPropia3ReportController;
+use App\Http\Controllers\Reportes\GestionesPropia4ReportController;
+use App\Http\Controllers\Reportes\ReportePagosController;
 
 Route::middleware('web')->group(function () {
 
@@ -25,7 +29,7 @@ Route::middleware('web')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // GESTIONES PROPIA 1 Y 2
+    // GESTIONES PROPIA 1 Y 2        
     Route::get('/gestiones/propia12', [GestionPropiaController::class, 'form'])
         ->name('gestiones.propia12.form');
 
@@ -135,6 +139,34 @@ Route::middleware('web')->group(function () {
     Route::delete('/pagos/propia4/{id}', [PagosPropia4Controller::class, 'destroy'])
         ->name('pagos.propia4.destroy');
 
+    // REPORTES GESTIONES PROPIA 1 Y 2
+    Route::get('/reportes/gestiones/propia12', [GestionesPropia12ReportController::class, 'index'])
+        ->name('reportes.gestiones.propia12');
+
+    Route::get('/reportes/gestiones/propia12/xlsx', [GestionesPropia12ReportController::class, 'xlsx'])
+        ->name('reportes.gestiones.propia12.xlsx');
+    
+    // REPORTES GESTIONES PROPIA 3
+    Route::get('/reportes/gestiones/propia3', [GestionesPropia3ReportController::class, 'index'])
+        ->name('reportes.gestiones.propia3');
+    
+    Route::get('/reportes/gestiones/propia3/xlsx', [GestionesPropia3ReportController::class, 'xlsx'])
+        ->name('reportes.gestiones.propia3.xlsx');
+
+    // REPORTES GESTIONES PROPIA 4
+    Route::get('/reportes/gestiones/propia4', [GestionesPropia4ReportController::class, 'index'])
+        ->name('reportes.gestiones.propia4');
+
+    Route::get('/reportes/gestiones/propia4/xlsx', [GestionesPropia4ReportController::class, 'xlsx'])
+        ->name('reportes.gestiones.propia4.xlsx');
+    
+    // REPORTES PAGOS
+    Route::get('/reportes/pagos', [ReportePagosController::class, 'index'])
+        ->name('reportes.pagos.index');
+
+    Route::get('/reportes/pagos/xlsx', [ReportePagosController::class, 'xlsx'])
+        ->name('reportes.pagos.xlsx');   
+             
     // TIPIFICACIONES
     Route::get('/parametros/tipificaciones', [TipificacionController::class, 'index'])
         ->name('parametros.tipificaciones.index');
