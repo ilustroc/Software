@@ -59,8 +59,8 @@ class GestionPropia4Controller extends Controller
             $data = [];
 
             foreach ($rows as $r) {
-                $importeFin   = $this->parseMonto($r->importe_financiamiento ?? null);
-                $fechaPromesa = $this->parseFecha($r->fecha_promesa ?? null);
+                $importeFin   = $this->parseMonto($r->importeFinanciamiento ?? $r->importe_financiamiento ?? null);
+                $fechaPromesa = $this->parseFecha($r->fechaPromesa ?? $r->fecha_promesa ?? null);
 
                 $data[] = [
                     'cliente'              => $r->cliente ?? null,
@@ -272,40 +272,45 @@ class GestionPropia4Controller extends Controller
     }
 
     // Helpers ============================
-
-    private function parseMonto(?string $valor): ?float
+    private function parseMonto($valor): ?float
     {
-        if ($valor === null || trim($valor) === '') {
-            return null;
+        if ($valor === null) return null;
+
+        if (is_numeric($valor)) {
+            return (float) $valor;
         }
 
-        $limpio = str_replace(['S/', 's/', ' ', ','], ['', '', '', '.'], $valor);
+        $s = trim((string)$valor);
+        if ($s === '') return null;
 
-        if (!is_numeric($limpio)) {
-            return null;
+        // Quita monedas/espacios
+        $s = str_ireplace(['S/.', 'S/', ' '], '', $s);
+
+        // Si tiene "," y ".", asumimos "," miles y "." decimales -> quitamos ","
+        if (str_contains($s, ',') && str_contains($s, '.')) {
+            $s = str_replace(',', '', $s);
+        } else {
+            // Si solo hay ",", lo tratamos como decimal
+            $s = str_replace(',', '.', $s);
         }
 
-        return (float) $limpio;
+        return is_numeric($s) ? (float)$s : null;
     }
 
-    private function parseFecha(?string $valor): ?string
+    private function parseFecha($valor): ?string
     {
-        if ($valor === null) {
-            return null;
+        if ($valor === null) return null;
+
+        if ($valor instanceof \DateTimeInterface) {
+            return $valor->format('Y-m-d H:i:s');
         }
 
-        $trim = trim($valor);
-        if ($trim === '' ||
-            stripos($trim, 'inválida') !== false ||
-            stripos($trim, 'invalida') !== false) {
+        $trim = trim((string)$valor);
+        if ($trim === '' || stripos($trim, 'invalida') !== false || stripos($trim, 'inválida') !== false) {
             return null;
         }
 
         $ts = strtotime($trim);
-        if ($ts === false) {
-            return null;
-        }
-
-        return date('Y-m-d H:i:s', $ts);
+        return ($ts === false) ? null : date('Y-m-d H:i:s', $ts);
     }
 }
