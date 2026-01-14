@@ -59,25 +59,34 @@ class GestionPropia4Controller extends Controller
             $data = [];
 
             foreach ($rows as $r) {
-                $importeFin   = $this->parseMonto($r->importeFinanciamiento ?? $r->importe_financiamiento ?? null);
-                $fechaPromesa = $this->parseFecha($r->fechaPromesa ?? $r->fecha_promesa ?? null);
+
+                // Normaliza nombres de columnas a minúsculas para evitar problemas de case
+                $x = array_change_key_case((array) $r, CASE_LOWER);
+
+                $importeFinRaw   = $x['importefinanciamiento'] ?? $x['importe_financiamiento'] ?? null;
+                $fechaPromesaRaw = $x['fechapromesa']          ?? $x['fecha_promesa']          ?? null;
+
+                $importeFin   = $this->parseMonto($importeFinRaw);
+                $fechaPromesa = $this->parseFecha($fechaPromesaRaw);
 
                 $data[] = [
-                    'cliente'              => $r->cliente ?? null,
-                    'documento'            => $r->documento ?? null,
-                    'value2'               => $r->value2 ?? null,
-                    'value1'               => $r->value1 ?? null,
-                    'fullname'             => $r->fullname ?? null,
-                    'operacion'            => $r->operacion ?? null,
-                    'entidad'              => $r->entidad ?? null,
-                    'dateprocessed'        => $r->dateprocessed ?? null,
-                    'fechaAgenda'          => $r->fechaAgenda ?? null,
-                    'callerid'             => $r->callerid ?? null,
-                    'comment'              => $r->comment ?? null,
+                    'cliente'                => $x['cliente'] ?? null,
+                    'documento'              => $x['documento'] ?? null,
+                    'value2'                 => $x['value2'] ?? null,
+                    'value1'                 => $x['value1'] ?? null,
+                    'fullname'               => $x['fullname'] ?? null,
+                    'operacion'              => $x['operacion'] ?? null,
+                    'entidad'                => $x['entidad'] ?? null,
+                    'dateprocessed'          => $x['dateprocessed'] ?? null,
+                    'fechaAgenda'            => $x['fechaagenda'] ?? null,
+                    'callerid'               => $x['callerid'] ?? null,
+                    'comment'                => $x['comment'] ?? null,
+
                     'importe_financiamiento' => $importeFin,
-                    'nroCuotas'            => $r->nroCuotas ?? null,
-                    'fecha_promesa'        => $fechaPromesa,
-                    'campaign'             => $r->campaign ?? null,
+                    'nroCuotas'              => $x['nrocuotas'] ?? null,
+                    'fecha_promesa'          => $fechaPromesa,
+
+                    'campaign'               => $x['campaign'] ?? null,
                 ];
             }
 
@@ -276,21 +285,16 @@ class GestionPropia4Controller extends Controller
     {
         if ($valor === null) return null;
 
-        if (is_numeric($valor)) {
-            return (float) $valor;
-        }
+        if (is_numeric($valor)) return (float) $valor;
 
         $s = trim((string)$valor);
         if ($s === '') return null;
 
-        // Quita monedas/espacios
         $s = str_ireplace(['S/.', 'S/', ' '], '', $s);
 
-        // Si tiene "," y ".", asumimos "," miles y "." decimales -> quitamos ","
         if (str_contains($s, ',') && str_contains($s, '.')) {
             $s = str_replace(',', '', $s);
         } else {
-            // Si solo hay ",", lo tratamos como decimal
             $s = str_replace(',', '.', $s);
         }
 
