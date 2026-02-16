@@ -63,7 +63,7 @@ class GestionPropia4Controller extends Controller
                 // Normaliza nombres de columnas a minúsculas para evitar problemas de case
                 $x = array_change_key_case((array) $r, CASE_LOWER);
 
-                $importeFinRaw   = $x['importefinanciamiento'] ?? $x['importe_financiamiento'] ?? null;
+                $importeFinRaw   = $x['importeCuota'] ?? $x['importe_financiamiento'] ?? null;
                 $fechaPromesaRaw = $x['fechapromesa']          ?? $x['fecha_promesa']          ?? null;
 
                 $importeFin   = $this->parseMonto($importeFinRaw);
