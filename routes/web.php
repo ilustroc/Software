@@ -2,15 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\GestionPropiaController;
-use App\Http\Controllers\AbandonadosController;
+use App\Http\Controllers\GestionController;
 use App\Http\Controllers\PagosPropia12Controller;
 use App\Http\Controllers\PagosPropia3Controller;
 use App\Http\Controllers\PagosPropia4Controller;
-use App\Http\Controllers\GestionPropia3Controller;
-use App\Http\Controllers\GestionPropia4Controller;
 use App\Http\Controllers\TipificacionController;
-use App\Http\Controllers\AmdController;
 use App\Http\Controllers\Reportes\GestionesPropia12ReportController;
 use App\Http\Controllers\Reportes\GestionesPropia3ReportController;
 use App\Http\Controllers\Reportes\GestionesPropia4ReportController;
@@ -29,58 +25,20 @@ Route::middleware('web')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // GESTIONES PROPIA 1 Y 2        
-    Route::get('/gestiones/propia12', [GestionPropiaController::class, 'form'])
-        ->name('gestiones.propia12.form');
+    // --- VISTAS DE FORMULARIOS / TABLAS ---
+    Route::get('/gestiones/propia12',   [GestionController::class, 'formPropia12'])->name('gestiones.propia12.form');
+    Route::get('/gestiones/propia3',    [GestionController::class, 'formPropia3'])->name('gestiones.propia3.form');
+    Route::get('/gestiones/kpi',        [GestionController::class, 'formKpi'])->name('gestiones.kpi.form');
+    Route::get('/gestiones/amd',        [GestionController::class, 'indexAmd'])->name('gestiones.amd');
+    Route::get('/gestiones/abandonados', [GestionController::class, 'indexAbandonados'])->name('gestiones.abandonados');
 
-    Route::post('/gestiones/propia12/cargar', [GestionPropiaController::class, 'cargar'])
-        ->name('gestiones.propia12.cargar');
+    // --- ACCIONES UNIFICADAS (Sincronización CRM) ---
+    // Esta ruta sirve para: propia12, propia3, kpi, amd y abandonados
+    Route::post('/gestiones/{tipo}/cargar', [GestionController::class, 'cargar'])->name('gestiones.generica.cargar');
 
-    Route::post('/gestiones/propia12/import-excel', [GestionPropiaController::class, 'importExcel'])
-        ->name('gestiones.propia12.importExcel');
-        
-    // GESTIONES PROPIA 3 (Zigor)
-    Route::get('/gestiones/propia3', [GestionPropia3Controller::class, 'form'])
-        ->name('gestiones.propia3.form');
-
-    Route::post('/gestiones/propia3/cargar', [GestionPropia3Controller::class, 'cargar'])
-        ->name('gestiones.propia3.cargar');
-
-    Route::post('/gestiones/propia3/cargar-sms', [GestionPropia3Controller::class, 'cargarSms'])
-        ->name('gestiones.propia3.cargarSms');
-        
-    Route::get('/gestiones/propia3/plantilla-sms', [GestionPropia3Controller::class, 'plantillaSms'])
-        ->name('gestiones.propia3.plantillaSms');
-
-    // GESTIONES PROPIA 4 (KPI)
-    Route::get('/gestiones/propia4',               [GestionPropia4Controller::class, 'form'])
-        ->name('gestiones.propia4.form');
-    Route::post('/gestiones/propia4/cargar',       [GestionPropia4Controller::class, 'cargar'])
-        ->name('gestiones.propia4.cargar');
-    Route::get('/gestiones/propia4/plantilla-sms', [GestionPropia4Controller::class, 'plantillaSms'])
-        ->name('gestiones.propia4.plantillaSms');
-    Route::post('/gestiones/propia4/cargar-sms',   [GestionPropia4Controller::class, 'cargarSms'])
-        ->name('gestiones.propia4.cargarSms');
-
-    // ABANDONADAS
-    Route::get('/gestiones/abandonados', [AbandonadosController::class, 'index'])
-        ->name('gestiones.abandonados');
-
-    Route::post('/gestiones/abandonados/cargar', [AbandonadosController::class, 'cargar'])
-        ->name('gestiones.abandonados.cargar');
-
-    Route::get('/gestiones/abandonados/descargar', [AbandonadosController::class, 'descargar'])
-        ->name('gestiones.abandonados.descargar');
-
-    // AMD
-    Route::get('/gestiones/amd', [AmdController::class, 'index'])
-        ->name('gestiones.amd');
-
-    Route::post('/gestiones/amd/cargar', [AmdController::class, 'cargar'])
-        ->name('gestiones.amd.cargar');
-
-    Route::get('/gestiones/amd/descargar', [AmdController::class, 'descargar'])
-        ->name('gestiones.amd.descargar');
+    // --- CARGA MANUAL Y PLANTILLAS (Excel) ---
+    Route::get('/gestiones/manual/plantilla/{tipo}', [GestionController::class, 'plantillaManual'])->name('gestiones.manual.plantilla');
+    Route::post('/gestiones/manual/cargar/{tipo}', [GestionController::class, 'cargarManual'])->name('gestiones.manual.cargar');
 
     // PAGOS PROPIA 1 Y 2
     Route::get('/pagos/propia12', [PagosPropia12Controller::class, 'index'])

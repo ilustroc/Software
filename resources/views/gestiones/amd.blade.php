@@ -1,145 +1,109 @@
 @extends('layouts.app')
 
 @section('title', 'Llamadas AMD')
-@section('page_title', 'Llamadas AMD')
-@section('page_subtitle', 'Consulta y exportación de llamadas AMD desde el CRM.')
+
+@push('styles')
+    @vite(['resources/css/gestiones.css'])
+@endpush
 
 @section('content')
-<div class="space-y-5">
+<div class="space-y-6">
+    @include('components.alerts')
 
-    {{-- ALERTAS --}}
-    @if(session('msg'))
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <div class="flex items-start gap-2">
-                <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-xs">✓</span>
-                <div class="flex-1">
-                    <div class="font-semibold">Listo</div>
-                    <div>{{ session('msg') }}</div>
-                </div>
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        
+        <div class="admin-card">
+            <div class="border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-sm font-bold text-slate-900 uppercase">Sincronización CRM</h3>
+                <p class="text-[11px] text-slate-500 font-mono">Tabla: Llamadas_AMD</p>
             </div>
-        </div>
-    @endif
 
-    @if(session('error'))
-        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            <div class="flex items-start gap-2">
-                <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-xs">!</span>
-                <div class="flex-1">
-                    <div class="font-semibold">Atención</div>
-                    <div>{{ session('error') }}</div>
+            <form method="POST" action="{{ route('gestiones.generica.cargar', 'amd') }}" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="admin-label">Desde</label>
+                        <input type="date" name="desde" value="{{ $desde }}" class="admin-input" required>
+                    </div>
+                    <div>
+                        <label class="admin-label">Hasta</label>
+                        <input type="date" name="hasta" value="{{ $hasta }}" class="admin-input" required>
+                    </div>
                 </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- FILTRO + ACCIONES --}}
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <div class="text-sm font-semibold text-slate-900">Cargar desde CRM</div>
-                <div class="mt-0.5 text-xs text-slate-500">
-                    Selecciona el rango de fechas para traer y exportar llamadas AMD.
+                <div class="flex items-center justify-end pt-2">
+                    <button type="submit" class="btn-primary w-full sm:w-auto">Sincronizar CRM</button>
                 </div>
-            </div>
-            <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
-                CSV
-            </span>
+            </form>
         </div>
 
-        <form method="POST" action="{{ route('gestiones.amd.cargar') }}" class="mt-4">
-            @csrf
-
-            <div class="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-end">
-                <div class="lg:col-span-3">
-                    <label class="text-xs font-semibold text-slate-700">Desde</label>
-                    <input type="date" name="desde" value="{{ $desde }}" required
-                           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-100">
+        <div class="admin-card">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 uppercase">Importación Manual</h3>
+                    <p class="text-[11px] text-slate-500 font-mono">Formato: XLSX</p>
                 </div>
-
-                <div class="lg:col-span-3">
-                    <label class="text-xs font-semibold text-slate-700">Hasta</label>
-                    <input type="date" name="hasta" value="{{ $hasta }}" required
-                           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-100">
-                </div>
-
-                <div class="lg:col-span-3">
-                    <button class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">
-                        Cargar AMD
-                    </button>
-                </div>
-
-                <div class="lg:col-span-3">
-                    <a href="{{ route('gestiones.amd.descargar', ['desde' => $desde, 'hasta' => $hasta]) }}"
-                       class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition">
-                        Descargar CSV
-                    </a>
-                </div>
+                <a href="{{ route('gestiones.manual.plantilla', 'amd') }}" class="btn-outline">
+                    Descargar Estructura
+                </a>
             </div>
-        </form>
+
+            <form method="POST" action="{{ route('gestiones.manual.cargar', 'amd') }}" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="admin-label">Archivo de Excel</label>
+                    <input type="file" name="archivo" accept=".xlsx" class="admin-input" required>
+                </div>
+                <div class="flex items-center justify-end">
+                    <button type="submit" class="btn-success w-full sm:w-auto">Procesar Excel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    {{-- TABLA --}}
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-            <div>
-                <div class="text-sm font-semibold text-slate-900">Listado de llamadas AMD</div>
-                <div class="text-xs text-slate-500">Resultados según el rango seleccionado.</div>
-            </div>
-        </div>
-
+    <div class="admin-card !p-0 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    <tr class="text-left">
-                        <th class="px-4 py-3">Fecha</th>
-                        <th class="px-4 py-3">Campaña</th>
-                        <th class="px-4 py-3">Destino (dst)</th>
-                        <th class="px-4 py-3">Disposición</th>
-                        <th class="px-4 py-3">Userfield</th>
-                        <th class="px-4 py-3">Contact</th>
-                        <th class="px-4 py-3">Dialbase</th>
-                        <th class="px-4 py-3">Doc</th>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-500">
+                    <tr>
+                        <th class="px-5 py-3">Fecha</th>
+                        <th class="px-5 py-3">Campaña</th>
+                        <th class="px-5 py-3">Destino</th>
+                        <th class="px-5 py-3">Disposición</th>
+                        <th class="px-5 py-3">Userfield</th>
+                        <th class="px-5 py-3">Dialbase</th>
+                        <th class="px-5 py-3">Doc</th>
                     </tr>
                 </thead>
-
                 <tbody class="divide-y divide-slate-100">
                     @forelse($registros as $r)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3 text-slate-900 whitespace-nowrap">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-5 py-3 text-slate-900 font-medium whitespace-nowrap">
                                 {{ \Carbon\Carbon::parse($r->calldate)->format('d/m/Y H:i') }}
                             </td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->campaign }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->dst }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->disposition }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->userfield }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->contact }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->dialbase }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $r->doc }}</td>
+                            <td class="px-5 py-3 text-slate-600">{{ $r->campaign }}</td>
+                            <td class="px-5 py-3 text-slate-600">{{ $r->dst }}</td>
+                            <td class="px-5 py-3">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
+                                    {{ $r->disposition }}
+                                </span>
+                            </td>
+                            <td class="px-5 py-3 text-slate-600">{{ $r->userfield }}</td>
+                            <td class="px-5 py-3 text-slate-600">{{ $r->dialbase }}</td>
+                            <td class="px-5 py-3 text-slate-600">{{ $r->doc }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">
-                                No se encontraron llamadas AMD en el rango seleccionado.
-                            </td>
+                            <td colspan="7" class="px-5 py-10 text-center text-slate-400">Sin registros en el rango seleccionado.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <div class="flex flex-col gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="text-xs text-slate-500">
-                @if($registros->total() > 0)
-                    Mostrando {{ $registros->firstItem() }} al {{ $registros->lastItem() }} de {{ $registros->total() }} registros
-                @else
-                    Sin registros para el rango seleccionado
-                @endif
-            </div>
-            <div>
+        @if($registros->hasPages())
+            <div class="px-5 py-4 border-t border-slate-100">
                 {{ $registros->onEachSide(1)->links('components.pagination-sm') }}
             </div>
-        </div>
+        @endif
     </div>
-
 </div>
 @endsection

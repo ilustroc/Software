@@ -1,0 +1,63 @@
+.auth-page {
+    @apply min-h-screen bg-slate-100 text-slate-900;
+}
+
+.auth-shell {
+    @apply mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-8;
+}
+
+.auth-wrap {
+    @apply w-full max-w-md;
+}
+
+.auth-brand {
+    @apply mb-6 text-center;
+}
+
+.auth-card {
+    @apply rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60;
+}
+
+.auth-header {
+    @apply mb-8 flex items-center gap-4;
+}
+
+.auth-logo-box {
+    @apply flex h-12 w-12 items-center justify-center rounded-2xl border border-fuchsia-100 bg-fuchsia-50;
+}
+
+.auth-logo-mark {
+    @apply h-8 w-8 object-contain;
+}
+
+.auth-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-700;
+}
+
+.auth-title {
+    @apply mt-1 text-2xl font-bold tracking-tight text-slate-900;
+}
+
+.auth-subtitle {
+    @apply mt-1 text-sm text-slate-500;
+}
+
+.auth-form {
+    @apply space-y-5;
+}
+
+.auth-field {
+    @apply space-y-0;
+}
+
+.password-wrap {
+    @apply relative;
+}
+
+.auth-note {
+    @apply mt-4 text-center text-xs text-slate-500;
+}
+
+.auth-footer {
+    @apply mt-5 text-center text-xs text-slate-500;
+}

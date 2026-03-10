@@ -1,108 +1,116 @@
-{{-- resources/views/auth/login.blade.php --}}
 <!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Login - ImpulseGo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    {{-- Tailwind (CDN) --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <link rel="icon" type="image/png" href="{{ asset('img/logotipo.png') }}">
+
+    @vite(['resources/css/auth.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-slate-50">
-    <div class="min-h-screen flex items-center justify-center px-4 py-10">
-        <div class="w-full max-w-md">
-            {{-- Card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                {{-- Header --}}
-                <div class="px-6 pt-6">
-                    <div class="flex items-center gap-3">
-                        <div class="h-11 w-11 rounded-2xl bg-slate-900/5 flex items-center justify-center">
-                            <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
-                                <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-semibold text-slate-900">Ingreso a Reportes</div>
-                            <div class="text-xs text-slate-500">ImpulseGo</div>
-                        </div>
+<body class="auth-page">
+
+    <main class="auth-shell">
+        <div class="auth-wrap">
+
+            <section class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-logo-box">
+                        <img
+                            src="{{ asset('img/logotipo.png') }}"
+                            alt="ImpulseGo"
+                            class="auth-logo-mark"
+                        >
+                    </div>
+
+                    <div>
+                        <div class="auth-kicker">Panel administrativo</div>
+                        <h1 class="auth-title">Iniciar sesión</h1>
+                        <p class="auth-subtitle">Ingresa tus credenciales para continuar.</p>
                     </div>
                 </div>
 
-                {{-- Body --}}
-                <div class="px-6 pb-6 pt-5">
-                    @if($errors->has('login'))
-                        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {{ $errors->first('login') }}
-                        </div>
-                    @endif
+                @if($errors->has('login'))
+                    <div class="alert-error mb-5">
+                        {{ $errors->first('login') }}
+                    </div>
+                @endif
 
-                    <form method="POST" action="{{ route('login.post') }}" class="space-y-4">
-                        @csrf
+                <form method="POST" action="{{ route('login.post') }}" class="auth-form">
+                    @csrf
 
-                        {{-- Usuario --}}
-                        <div>
-                            <label class="text-xs font-semibold text-slate-700">Usuario</label>
-                            <input
-                                type="text"
-                                name="usuario"
-                                value="{{ old('usuario') }}"
-                                autofocus
-                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none transition
-                                    {{ $errors->has('usuario')
-                                        ? 'border-red-400 focus:ring-4 focus:ring-red-100'
-                                        : 'border-slate-200 focus:border-slate-300 focus:ring-4 focus:ring-slate-100'
-                                    }}"
-                                placeholder="Escribe tu usuario"
-                            >
-                            @error('usuario')
-                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Contraseña --}}
-                        <div>
-                            <label class="text-xs font-semibold text-slate-700">Contraseña</label>
-                            <input
-                                type="password"
-                                name="password"
-                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none transition
-                                    {{ $errors->has('password')
-                                        ? 'border-red-400 focus:ring-4 focus:ring-red-100'
-                                        : 'border-slate-200 focus:border-slate-300 focus:ring-4 focus:ring-slate-100'
-                                    }}"
-                                placeholder="••••••••"
-                            >
-                            @error('password')
-                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Botón --}}
-                        <button
-                            type="submit"
-                            class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white
-                                   hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200"
+                    <div class="auth-field">
+                        <label for="usuario" class="form-label">Usuario</label>
+                        <input
+                            id="usuario"
+                            type="text"
+                            name="usuario"
+                            value="{{ old('usuario') }}"
+                            autofocus
+                            autocomplete="username"
+                            placeholder="Escribe tu usuario"
+                            class="form-input @error('usuario') form-input-error @enderror"
                         >
-                            Ingresar
-                        </button>
+                        @error('usuario')
+                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        {{-- Footer mini --}}
-                        <div class="pt-1 text-center text-[11px] text-slate-500">
-                            Acceso solo para personal autorizado
+                    <div class="auth-field" x-data="{ show: false }">
+                        <label for="password" class="form-label">Contraseña</label>
+
+                        <div class="password-wrap">
+                            <input
+                                id="password"
+                                x-bind:type="show ? 'text' : 'password'"
+                                name="password"
+                                autocomplete="current-password"
+                                placeholder="••••••••"
+                                class="form-input pr-11 @error('password') form-input-error @enderror"
+                            >
+
+                            <button
+                                type="button"
+                                class="input-action"
+                                @click="show = !show"
+                                aria-label="Mostrar contraseña"
+                            >
+                                <svg x-show="!show" class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+
+                                <svg x-show="show" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M10.58 10.58A2 2 0 0 0 13.42 13.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M9.88 5.09A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a17.56 17.56 0 0 1-4.04 4.87" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M6.61 6.61C3.73 8.55 2 12 2 12s3.5 7 10 7a9.77 9.77 0 0 0 4.24-.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
                         </div>
-                    </form>
-                </div>
-            </div>
 
-            {{-- Nota inferior --}}
-            <div class="mt-4 text-center text-xs text-slate-500">
+                        @error('password')
+                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Ingresar
+                    </button>
+                </form>
+
+                <p class="auth-note">
+                    Acceso solo para personal autorizado
+                </p>
+            </section>
+
+            <div class="auth-footer">
                 © {{ date('Y') }} ImpulseGo
             </div>
         </div>
-    </div>
+    </main>
+
 </body>
 </html>

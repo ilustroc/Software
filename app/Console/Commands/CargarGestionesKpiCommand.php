@@ -7,10 +7,10 @@ use App\Services\GestionService;
 use Illuminate\Support\Carbon;
 use Throwable;
 
-class CargarGestionesPropia3Command extends Command
+class CargarGestionesKpiCommand extends Command
 {
-    protected $signature = 'gestiones:propia3-hora';
-    protected $description = 'Carga automática Propia 3 usando GestionService';
+    protected $signature = 'gestiones:kpi-hora';
+    protected $description = 'Carga automática KPI usando GestionService';
 
     public function handle(GestionService $service): int
     {
@@ -18,11 +18,11 @@ class CargarGestionesPropia3Command extends Command
         $start = Carbon::now()->subHours(2)->startOfHour();
 
         try {
-            $count = $service->sincronizar('propia3', $start->toDateTimeString(), $end->toDateTimeString());
-            $this->info("Propia 3: $count registros sincronizados.");
+            $count = $service->sincronizar('kpi', $start->toDateTimeString(), $end->toDateTimeString());
+            $this->info("KPI: $count registros sincronizados.");
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            $this->error("Error en Propia 3: " . $e->getMessage());
+            $this->error("Error en KPI: " . $e->getMessage());
             return Command::FAILURE;
         }
     }

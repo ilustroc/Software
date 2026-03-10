@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Cartera Propia 1y2')
+@section('title', 'Cartera KPI')
 
 @push('styles')
     @vite(['resources/css/gestiones.css'])
@@ -11,22 +11,27 @@
     @include('components.alerts')
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        
         <div class="admin-card">
             <div class="border-b border-slate-100 pb-3 mb-4">
                 <h3 class="text-sm font-bold text-slate-900 uppercase">Sincronización CRM</h3>
-                <p class="text-[11px] text-slate-500 font-mono">SP: spGestionPropia</p>
+                <p class="text-[11px] text-slate-500 font-mono">SP: spGestionKpi</p>
             </div>
 
-            <form method="POST" action="{{ route('gestiones.generica.cargar', 'propia12') }}" class="space-y-4">
+            <form method="POST" action="{{ route('gestiones.generica.cargar', 'kpi') }}" class="space-y-4">
                 @csrf
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="admin-label">Fecha inicio</label>
-                        <input type="date" name="desde" value="{{ old('desde', now()->startOfMonth()->toDateString()) }}" class="admin-input">
+                        <input type="date" name="desde" 
+                               value="{{ old('desde', now()->toDateString()) }}" 
+                               class="admin-input" required>
                     </div>
                     <div>
                         <label class="admin-label">Fecha fin</label>
-                        <input type="date" name="hasta" value="{{ old('hasta', now()->toDateString()) }}" class="admin-input">
+                        <input type="date" name="hasta" 
+                               value="{{ old('hasta', now()->toDateString()) }}" 
+                               class="admin-input" required>
                     </div>
                 </div>
                 <div class="flex items-center justify-end pt-2">
@@ -39,24 +44,26 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                 <div>
                     <h3 class="text-sm font-bold text-slate-900 uppercase">Carga Manual XLSX</h3>
-                    <p class="text-[11px] text-slate-500 font-mono">Tabla: Gestiones_1y2</p>
+                    <p class="text-[11px] text-slate-500 font-mono">Tabla: Gestiones_Propia4</p>
                 </div>
-                <a href="{{ route('gestiones.manual.plantilla', 'propia12') }}" class="btn-outline">
+                <a href="{{ route('gestiones.manual.plantilla', 'kpi') }}" class="btn-outline">
                     Descargar Estructura
                 </a>
             </div>
 
-            <form method="POST" action="{{ route('gestiones.manual.cargar', 'propia12') }}" enctype="multipart/form-data" class="space-y-4">
+            <form method="POST" action="{{ route('gestiones.manual.cargar', 'kpi') }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <div>
                     <label class="admin-label">Seleccionar Archivo</label>
-                    <input type="file" name="archivo" accept=".xlsx, .csv" class="admin-input">
+                    <input type="file" name="archivo" accept=".xlsx" 
+                           class="admin-input" required>
                 </div>
                 <div class="flex items-center justify-end">
                     <button type="submit" class="btn-success w-full sm:w-auto">Procesar Importación</button>
                 </div>
             </form>
         </div>
+
     </div>
 </div>
 @endsection
