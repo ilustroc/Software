@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
-use App\Jobs\ProcesarSincronizacionJob;
+use App\Services\GestionService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -48,6 +48,7 @@ class GestionController extends Controller
     /**
      * SINCRONIZACIÓN DESDE CRM (Usando Jobs para segundo plano)
      */
+
     public function cargar(Request $request, $tipo)
     {
         $request->validate([
@@ -56,18 +57,15 @@ class GestionController extends Controller
         ]);
 
         try {
-            // Enviamos el trabajo a la cola
-            ProcesarSincronizacionJob::dispatch(
-                $tipo, 
-                $request->desde, 
-                $request->hasta
-            );
+            // Ejecución DIRECTA (el usuario espera mientras carga)
+            $service = new GestionService();
+            $count = $service->sincronizar($tipo, $request->desde, $request->hasta);
 
-            // Respuesta inmediata al usuario
-            return back()->with('msg', "Se ha iniciado la sincronización de $tipo en segundo plano. Los datos aparecerán en breve.");
+            // Al terminar, vuelve a la misma página y los datos ya estarán ahí
+            return back()->with('msg', "Sincronización de $tipo exitosa: $count registros procesados.");
             
         } catch (Throwable $e) {
-            return back()->with('error', 'Error al programar la carga: ' . $e->getMessage());
+            return back()->with('error', 'Error en la sincronización: ' . $e->getMessage());
         }
     }
 
