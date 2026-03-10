@@ -97,7 +97,8 @@ class GestionService
                 $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
 
             } elseif ($tipo === 'propia12') {
-                $item['cliente'] = $row['cliente'] ?? $row['nombre'] ?? null;
+                // CORRECCIÓN: Propia 1y2 usa 'nombre', no 'cliente'
+                $item['nombre'] = $row['nombre'] ?? $row['cliente'] ?? null; 
                 $item['entidad'] = $row['entidad'] ?? null;
                 $item['cartera'] = $row['cartera'] ?? null;
                 $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
