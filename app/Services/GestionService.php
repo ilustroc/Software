@@ -23,7 +23,7 @@ class GestionService
     {
         $meta = $this->getMetadata($tipo);
 
-        // FIX: Detectar si ya viene con hora para no duplicar el string
+        // FIX: Si ya trae ":" (trae hora del Kernel), se usa tal cual. Si no, se completa el día.
         $desdeFull = (strpos($desde, ':') !== false) ? $desde : $desde . ' 00:00:00';
         $hastaFull = (strpos($hasta, ':') !== false) ? $hasta : $hasta . ' 23:59:59';
 
@@ -33,36 +33,73 @@ class GestionService
         $data = array_map(function($r) use ($tipo) {
             $row = array_change_key_case((array)$r, CASE_LOWER);
             
-            // ... (lógica de AMD y Abandonados igual) ...
+            // --- LÓGICA PARA AMD ---
+            if ($tipo === 'amd') {
+                return [
+                    'calldate'    => $row['calldate'] ?? null,
+                    'campaign'    => $row['campaign'] ?? null,
+                    'dst'         => $row['dst'] ?? null,
+                    'disposition' => $row['disposition'] ?? null,
+                    'userfield'   => $row['userfield'] ?? null,
+                    'contact'     => $row['contact'] ?? null,
+                    'dialbase'    => $row['dialbase'] ?? null,
+                    'doc'         => $row['doc'] ?? null,
+                ];
+            }
 
-            // --- LÓGICA PARA GESTIONES (Corregida para KPI) ---
+            // --- LÓGICA PARA ABANDONADOS ---
+            if ($tipo === 'abandonados') {
+                return [
+                    'fecha_evento' => $row['datetime'] ?? null,
+                    'event'        => $row['event'] ?? null,
+                    'callidnum'    => $row['callidnum'] ?? null,
+                    'guid'         => $row['guid'] ?? null,
+                    'queue'        => $row['queue'] ?? null,
+                    'enterdate'    => $row['enterdate'] ?? null,
+                    'posabandon'   => $row['posabandon'] ?? null,
+                    'posoriginal'  => $row['posoriginal'] ?? null,
+                    'callerid'     => $row['callerid'] ?? null,
+                    'timewait'     => $row['timewait'] ?? null,
+                    'documento'    => $row['documento'] ?? null,
+                ];
+            }
+
+            // --- LÓGICA PARA GESTIONES (KPI, Propia 3, Propia 12) ---
+            
+            // Extraemos el monto sea cual sea el nombre que venga del SP
             $montoRaw = $row['pagar_por_cuota'] ?? $row['importecuota'] ?? $row['importe_financiamiento'] ?? $row['importefinanciamiento'] ?? null;
             
+            // Campos Base Comunes
             $item = [
                 'documento'     => $row['documento'] ?? null,
-                'cliente'       => $row['cliente'] ?? $row['nombre'] ?? null, // <--- CAMBIADO A 'cliente'
                 'value2'        => $row['value2'] ?? null,
                 'value1'        => $row['value1'] ?? null,
                 'fullname'      => $row['fullname'] ?? null,
                 'operacion'     => $row['operacion'] ?? null,
                 'dateprocessed' => $row['dateprocessed'] ?? null,
-                'fechaAgenda'   => $row['fechaagenda'] ?? null, // <--- RESPETANDO TU LISTA
+                'fechaAgenda'   => $row['fechaagenda'] ?? null,
                 'callerid'      => $row['callerid'] ?? null,
                 'comment'       => $row['comment'] ?? null,
-                'nroCuotas'     => $row['nrocuotas'] ?? null,   // <--- RESPETANDO TU LISTA
+                'nroCuotas'     => $row['nrocuotas'] ?? null,
                 'campaign'      => $row['campaign'] ?? null,
                 'fecha_promesa' => $this->parseFecha($row['fecha_promesa'] ?? $row['fechapromesa'] ?? null),
             ];
 
+            // Ajustes específicos por tipo (Nombres de columnas exactos de tu DB)
             if ($tipo === 'kpi') {
+                $item['cliente'] = $row['cliente'] ?? $row['nombre'] ?? null; // KPI usa 'cliente'
                 $item['entidad'] = $row['entidad'] ?? null;
                 $item['importe_financiamiento'] = $this->parseMonto($montoRaw);
+
+            } elseif ($tipo === 'propia3') {
+                $item['nombre'] = $row['nombre'] ?? $row['cliente'] ?? null;  // Propia 3 usa 'nombre'
+                $item['ctl'] = $row['ctl'] ?? null;
+                $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
+
             } elseif ($tipo === 'propia12') {
+                $item['cliente'] = $row['cliente'] ?? $row['nombre'] ?? null;
                 $item['entidad'] = $row['entidad'] ?? null;
                 $item['cartera'] = $row['cartera'] ?? null;
-                $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
-            } elseif ($tipo === 'propia3') {
-                $item['ctl'] = $row['ctl'] ?? null;
                 $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
             }
 
@@ -70,7 +107,9 @@ class GestionService
         }, $rows);
 
         return DB::transaction(function () use ($data, $meta, $desdeFull, $hastaFull) {
+            // Borramos exactamente el mismo rango que vamos a insertar
             DB::table($meta['tabla'])->whereBetween($meta['fecha_col'], [$desdeFull, $hastaFull])->delete();
+            
             foreach (array_chunk($data, 500) as $chunk) {
                 DB::table($meta['tabla'])->insert($chunk);
             }
