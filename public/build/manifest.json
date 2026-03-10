@@ -1,0 +1,23 @@
+{
+  "resources/css/auth.css": {
+    "file": "assets/auth-Atv64Q4f.css",
+    "src": "resources/css/auth.css",
+    "isEntry": true
+  },
+  "resources/css/gestiones.css": {
+    "file": "assets/gestiones-WAbzdz8Y.css",
+    "src": "resources/css/gestiones.css",
+    "isEntry": true
+  },
+  "resources/css/panel.css": {
+    "file": "assets/panel-BESNa4LS.css",
+    "src": "resources/css/panel.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D4YQlZ8J.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
