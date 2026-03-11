@@ -2,30 +2,78 @@
     display: none !important;
 }
 
-.form-label {
+@utility form-label {
     @apply mb-2 block text-sm font-medium text-slate-700;
 }
 
-.form-input {
+@utility form-input {
     @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-100;
 }
 
-.form-input-error {
+@utility form-input-error {
     @apply border-red-400 focus:border-red-400 focus:ring-red-100;
 }
 
-.input-action {
+@utility input-action {
     @apply absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-600;
 }
 
-.btn-primary {
+@utility btn-primary {
     @apply inline-flex w-full items-center justify-center rounded-xl bg-fuchsia-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-800 focus:outline-none focus:ring-4 focus:ring-fuchsia-200;
 }
 
-.card-soft {
+@utility card-soft {
     @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
 }
 
-.alert-error {
+@utility alert-error {
     @apply rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700;
+}
+
+.toast-stack {
+    @apply fixed right-5 top-5 z-[9999] flex w-[380px] max-w-[calc(100vw-1.5rem)] flex-col gap-3;
+}
+
+.toast-item {
+    @apply flex items-start gap-3 rounded-2xl border-l-4 border bg-white px-4 py-4 shadow-xl;
+}
+
+.toast-success {
+    @apply border-emerald-200 border-l-emerald-500;
+}
+
+.toast-error {
+    @apply border-red-200 border-l-red-500;
+}
+
+.toast-logo-wrap {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-200;
+}
+
+.toast-success .toast-logo-wrap {
+    @apply bg-emerald-50 ring-emerald-100;
+}
+
+.toast-error .toast-logo-wrap {
+    @apply bg-red-50 ring-red-100;
+}
+
+.toast-logo {
+    @apply h-7 w-7 object-contain;
+}
+
+.toast-title {
+    @apply text-sm font-bold text-slate-900;
+}
+
+.toast-text {
+    @apply mt-1 break-words text-sm text-slate-600;
+}
+
+.toast-list {
+    @apply mt-1 list-disc space-y-1 pl-4 text-sm text-slate-600;
+}
+
+.toast-close {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700;
 }

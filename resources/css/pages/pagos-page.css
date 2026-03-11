@@ -1,0 +1,135 @@
+.pagos-page {
+    @apply grid gap-5;
+}
+
+.pagos-tools {
+    @apply grid grid-cols-1 gap-5 xl:grid-cols-2;
+}
+
+.pagos-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm;
+}
+
+.pagos-list-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
+.pagos-list-head {
+    @apply flex items-center justify-between border-b border-slate-200 px-5 py-4;
+}
+
+.pagos-card-header {
+    @apply mb-4;
+}
+
+.pagos-title {
+    @apply text-sm font-semibold text-slate-900;
+}
+
+.pagos-subtitle {
+    @apply mt-1 text-xs text-slate-500;
+}
+
+.btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+}
+
+.btn-muted {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100;
+}
+
+.file-input {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700;
+}
+
+.file-input::file-selector-button {
+    margin-right: 1rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: #0f172a;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+}
+
+.file-input:hover::file-selector-button {
+    background: #1e293b;
+}
+
+.data-table-wrap {
+    @apply overflow-x-auto;
+}
+
+.data-table {
+    @apply min-w-[980px] w-full text-sm;
+}
+
+.data-table thead {
+    @apply bg-slate-50 text-slate-700;
+}
+
+.data-table th {
+    @apply px-5 py-3 text-left font-semibold;
+}
+
+.data-table td {
+    @apply px-5 py-3;
+}
+
+.data-table tbody tr {
+    @apply border-t border-slate-200 hover:bg-slate-50;
+}
+
+.data-table-empty {
+    @apply px-5 py-10 text-center text-sm text-slate-500;
+}
+
+.data-table-footer {
+    @apply flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between;
+}
+
+.data-table-meta {
+    @apply text-xs text-slate-500;
+}
+
+.action-group {
+    @apply flex items-center justify-center gap-2;
+}
+
+.icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50;
+}
+
+.icon-btn-danger {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100;
+}
+
+.modal-shell {
+    @apply fixed inset-0 z-50 flex items-center justify-center px-4;
+}
+
+.modal-backdrop {
+    @apply absolute inset-0 bg-slate-950/50;
+}
+
+.modal-card {
+    @apply relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl;
+}
+
+.modal-head {
+    @apply flex items-center justify-between border-b border-slate-200 px-5 py-4;
+}
+
+.modal-body {
+    @apply grid gap-4 px-5 py-5;
+}
+
+.modal-footer {
+    @apply flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4;
+}
+
+.readonly-input {
+    @apply bg-slate-50 text-slate-500;
+}

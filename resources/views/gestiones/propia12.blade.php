@@ -8,7 +8,6 @@
 
 @section('content')
 <div class="space-y-6">
-    @include('components.alerts')
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="admin-card">

@@ -1,0 +1,79 @@
+.report-page {
+    @apply grid gap-5;
+}
+
+.report-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm;
+}
+
+.report-card-header {
+    @apply mb-4;
+}
+
+.report-title {
+    @apply text-sm font-semibold text-slate-900;
+}
+
+.report-subtitle {
+    @apply mt-1 text-xs text-slate-500;
+}
+
+.report-form-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4;
+}
+
+.report-actions {
+    @apply flex flex-wrap items-end gap-2 xl:justify-end;
+}
+
+.report-btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800;
+}
+
+.report-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+}
+
+.report-btn-export {
+    @apply inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100;
+}
+
+.report-list-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
+.report-list-head {
+    @apply border-b border-slate-200 px-5 py-4;
+}
+
+.report-table-wrap {
+    @apply overflow-x-auto;
+}
+
+.report-table {
+    @apply min-w-[1200px] w-full text-left text-sm;
+}
+
+.report-table thead {
+    @apply bg-slate-50 text-slate-700;
+}
+
+.report-table th {
+    @apply px-5 py-3 font-semibold;
+}
+
+.report-table td {
+    @apply px-5 py-3;
+}
+
+.report-table tbody tr {
+    @apply border-t border-slate-100 hover:bg-slate-50;
+}
+
+.report-table-empty {
+    @apply px-5 py-10 text-center text-sm text-slate-500;
+}
+
+.report-pagination {
+    @apply border-t text-left border-slate-200 px-5 py-4;
+}

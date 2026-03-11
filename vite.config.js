@@ -9,6 +9,8 @@ export default defineConfig({
                 'resources/css/auth.css',
                 'resources/css/panel.css',
                 'resources/css/gestiones.css',
+                'resources/css/reportes.css',
+                'resources/css/pagos.css',
                 'resources/js/app.js',
             ],
             refresh: true,

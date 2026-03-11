@@ -38,14 +38,12 @@
         x-show="mobileOpen"
         x-transition.opacity
         class="panel-overlay lg:hidden"
-        @click="closeSidebar()"
-    ></div>
+        @click="closeSidebar()"></div>
 
     {{-- Sidebar --}}
     <aside
         class="panel-sidebar"
-        :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    >
+        :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
         <div class="panel-sidebar-inner">
 
             {{-- Marca --}}
@@ -128,18 +126,21 @@
                     </button>
 
                     <div x-cloak x-show="openPagos" x-collapse class="nav-submenu">
-                        <a href="{{ route('pagos.propia12.index') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('pagos.propia12.*') ? $subActive : '' }}">
+                        {{-- Propia 1 y 2 --}}
+                        <a href="{{ route('pagos.index', 'propia12') }}"
+                        class="{{ $subBase }} {{ request()->is('pagos/propia12*') ? $subActive : '' }}">
                             Propia 1 y 2
                         </a>
 
-                        <a href="{{ route('pagos.propia3.index') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('pagos.propia3.*') ? $subActive : '' }}">
+                        {{-- Propia 3 --}}
+                        <a href="{{ route('pagos.index', 'propia3') }}"
+                        class="{{ $subBase }} {{ request()->is('pagos/propia3*') ? $subActive : '' }}">
                             Propia 3
                         </a>
 
-                        <a href="{{ route('pagos.propia4.index') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('pagos.propia4.*') ? $subActive : '' }}">
+                        {{-- Propia 4 --}}
+                        <a href="{{ route('pagos.index', 'propia4') }}"
+                        class="{{ $subBase }} {{ request()->is('pagos/propia4*') ? $subActive : '' }}">
                             Propia 4
                         </a>
                     </div>
@@ -165,34 +166,31 @@
                     </button>
 
                     <div x-cloak x-show="openReportes" x-collapse class="nav-submenu">
-                        @php
-                            $rg12 = 'reportes.gestiones.propia12';
-                            $rg3  = 'reportes.gestiones.propia3';
-                            $rg4  = 'reportes.gestiones.propia4';
-                            $rp   = 'reportes.pagos.index';
-                        @endphp
-
                         <div class="nav-subtitle">Gestiones</div>
 
-                        <a href="{{ \Illuminate\Support\Facades\Route::has($rg12) ? route($rg12) : '#' }}"
-                           class="{{ $subBase }} {{ request()->routeIs($rg12) ? $subActive : '' }}">
+                        {{-- Reporte Propia 1 y 2 --}}
+                        <a href="{{ route('reportes.gestiones.index', 'propia12') }}"
+                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia12*') ? $subActive : '' }}">
                             Propia 1 y 2
                         </a>
 
-                        <a href="{{ \Illuminate\Support\Facades\Route::has($rg3) ? route($rg3) : '#' }}"
-                           class="{{ $subBase }} {{ request()->routeIs($rg3) ? $subActive : '' }}">
+                        {{-- Reporte Propia 3 --}}
+                        <a href="{{ route('reportes.gestiones.index', 'propia3') }}"
+                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia3*') ? $subActive : '' }}">
                             Propia 3
                         </a>
 
-                        <a href="{{ \Illuminate\Support\Facades\Route::has($rg4) ? route($rg4) : '#' }}"
-                           class="{{ $subBase }} {{ request()->routeIs($rg4) ? $subActive : '' }}">
+                        {{-- Reporte Propia 4 --}}
+                        <a href="{{ route('reportes.gestiones.index', 'propia4') }}"
+                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia4*') ? $subActive : '' }}">
                             Propia 4
                         </a>
 
                         <div class="nav-subtitle mt-2">Pagos</div>
 
-                        <a href="{{ \Illuminate\Support\Facades\Route::has($rp) ? route($rp) : '#' }}"
-                           class="{{ $subBase }} {{ request()->routeIs('reportes.pagos.*') ? $subActive : '' }}">
+                        {{-- Reporte General de Pagos --}}
+                        <a href="{{ route('reportes.pagos.index') }}"
+                        class="{{ $subBase }} {{ request()->routeIs('reportes.pagos.*') ? $subActive : '' }}">
                             Reporte de pagos
                         </a>
                     </div>
@@ -269,6 +267,7 @@
         </header>
 
         <section class="panel-content">
+            @include('components.alerts')
             @yield('content')
         </section>
     </main>
