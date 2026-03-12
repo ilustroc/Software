@@ -1,0 +1,95 @@
+.dashboard-page {
+    @apply grid gap-6;
+}
+
+.dashboard-head {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+}
+
+.dashboard-title {
+    @apply text-lg font-semibold text-slate-900;
+}
+
+.dashboard-subtitle {
+    @apply text-sm text-slate-500;
+}
+
+.dashboard-head-right {
+    @apply inline-flex flex-wrap items-center gap-2;
+}
+
+.dashboard-chip {
+    @apply inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600;
+}
+
+.dashboard-chip-user {
+    @apply inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700;
+}
+
+.dashboard-chip-dot {
+    @apply h-2 w-2 rounded-full bg-emerald-500;
+}
+
+.dashboard-section {
+    @apply grid gap-3;
+}
+
+.dashboard-section-title {
+    @apply text-sm font-semibold text-slate-800;
+}
+
+.quick-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3;
+}
+
+.quick-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50;
+}
+
+.quick-card-row {
+    @apply flex items-center gap-3;
+}
+
+.quick-card-icon {
+    @apply flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700;
+}
+
+.quick-card-title {
+    @apply text-sm font-semibold text-slate-900;
+}
+
+.quick-card-subtitle {
+    @apply text-xs text-slate-500;
+}
+
+.stats-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4;
+}
+
+.stat-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm;
+}
+
+.stat-label {
+    @apply text-xs font-semibold text-slate-600;
+}
+
+.stat-value {
+    @apply mt-1 text-2xl font-semibold text-slate-900;
+}
+
+.stat-hint {
+    @apply mt-1 text-xs text-slate-500;
+}
+
+.report-box {
+    @apply rounded-2xl border border-slate-200 bg-slate-50 p-4;
+}
+
+.report-box-row {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+}
+
+.report-actions {
+    @apply flex flex-wrap gap-2;
+}
