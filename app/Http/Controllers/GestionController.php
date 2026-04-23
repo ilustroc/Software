@@ -205,9 +205,51 @@ class GestionController extends Controller
 
     private function parseExcelDate($valor): ?string
     {
-        if (empty($valor)) return null;
-        if (is_numeric($valor)) return ExcelDate::excelToDateTimeObject($valor)->format('Y-m-d H:i:s');
+        if ($valor === null) {
+            return null;
+        }
+
+        if ($valor instanceof \DateTimeInterface) {
+            return $valor->format('Y-m-d H:i:s');
+        }
+
+        $valor = trim((string) $valor);
+
+        if ($valor === '') {
+            return null;
+        }
+
+        // Si Excel lo entrega como serial numérico
+        if (is_numeric($valor)) {
+            try {
+                return ExcelDate::excelToDateTimeObject((float) $valor)->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        // Formatos más comunes de tus plantillas
+        $formatos = [
+            'd/m/Y H:i:s',
+            'd/m/Y H:i',
+            'd/m/Y',
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'Y-m-d',
+            'm/d/Y H:i:s',
+            'm/d/Y H:i',
+            'm/d/Y',
+        ];
+
+        foreach ($formatos as $formato) {
+            $dt = \DateTime::createFromFormat($formato, $valor);
+            if ($dt !== false) {
+                return $dt->format('Y-m-d H:i:s');
+            }
+        }
+
+        // Último intento
         $ts = strtotime(str_replace('/', '-', $valor));
-        return $ts ? date('Y-m-d H:i:s', $ts) : null;
+        return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
     }
 }
