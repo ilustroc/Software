@@ -107,7 +107,7 @@ class GestionController extends Controller
             'apdayc' => [
                 'tabla' => 'Gestiones_APDAYC',
                 'file_name' => 'plantilla_apdayc.xlsx',
-                'headers' => ['documento', 'socio', 'value2', 'value1', 'fullname', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign']
+                'headers' => ['documento','LIC_ID', 'socio', 'value2', 'value1', 'fullname', 'fechaAgenda', 'dateprocessed', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign']
             ],
             'amd' => [
                 'tabla' => 'Llamadas_AMD',
@@ -176,8 +176,10 @@ class GestionController extends Controller
 
                     if (in_array($key, ['dateprocessed', 'fechaAgenda', 'fecha_promesa', 'calldate', 'fecha_evento', 'enterdate'])) {
                         $rowData[$key] = $this->parseExcelDate($val);
-                    } elseif (in_array($key, ['pagar_por_cuota', 'importe_financiamiento'])) {
-                        $rowData[$key] = (float) str_replace(['$', ',', ' '], '', $val);
+                    } elseif (in_array($key, ['pagar_por_cuota', 'importe_financiamiento', 'montoPromesa'])) {
+                        $rowData[$key] = ($val === '' || $val === null) ? null : (float) str_replace(['$', ',', ' '], '', $val);
+                    } elseif (in_array($key, ['nroCuotas', 'nroCuota', 'contact'])) {
+                        $rowData[$key] = ($val === '' || $val === null) ? null : (int) $val;
                     } else {
                         $rowData[$key] = ($val === '') ? null : $val;
                     }
