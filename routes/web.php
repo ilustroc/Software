@@ -25,6 +25,7 @@ Route::middleware('web')->group(function () {
         Route::get('/propia3',    [GestionController::class, 'formPropia3'])->name('gestiones.propia3.form');
         Route::get('/kpi',        [GestionController::class, 'formKpi'])->name('gestiones.kpi.form');
         Route::get('/amd',        [GestionController::class, 'indexAmd'])->name('gestiones.amd');
+        Route::get('/ivr', [GestionController::class, 'indexIvr'])->name('gestiones.ivr');
         Route::get('/abandonados', [GestionController::class, 'indexAbandonados'])->name('gestiones.abandonados');
 
         // Sincronización CRM

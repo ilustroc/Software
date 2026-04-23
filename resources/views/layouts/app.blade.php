@@ -99,6 +99,11 @@
                             AMD
                         </a>
 
+                        <a href="{{ route('gestiones.ivr') }}"
+                        class="{{ $subBase }} {{ request()->routeIs('gestiones.ivr') ? $subActive : '' }}">
+                            IVR
+                        </a>
+                        
                         <a href="{{ route('gestiones.abandonados') }}"
                            class="{{ $subBase }} {{ request()->routeIs('gestiones.abandonados') ? $subActive : '' }}">
                             Abandonados

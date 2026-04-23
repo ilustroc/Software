@@ -45,6 +45,19 @@ class GestionController extends Controller
         return view('gestiones.abandonados', compact('registros', 'desde', 'hasta'));
     }
 
+    public function indexIvr(Request $request)
+    {
+        $desde = $request->desde ?? date('Y-m-d');
+        $hasta = $request->hasta ?? date('Y-m-d');
+
+        $registros = DB::table('Llamadas_IVR')
+            ->whereBetween('calldate', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
+            ->orderBy('calldate', 'desc')
+            ->paginate(10)
+            ->appends($request->query());
+
+        return view('gestiones.ivr', compact('registros', 'desde', 'hasta'));
+    }
     /**
      * SINCRONIZACIÓN DESDE CRM (Usando Jobs para segundo plano)
      */
@@ -93,6 +106,11 @@ class GestionController extends Controller
             'amd' => [
                 'tabla' => 'Llamadas_AMD',
                 'file_name' => 'plantilla_amd.xlsx',
+                'headers' => ['calldate', 'campaign', 'dst', 'disposition', 'userfield', 'contact', 'dialbase', 'doc']
+            ],
+            'ivr' => [
+                'tabla' => 'Llamadas_IVR',
+                'file_name' => 'plantilla_ivr.xlsx',
                 'headers' => ['calldate', 'campaign', 'dst', 'disposition', 'userfield', 'contact', 'dialbase', 'doc']
             ],
             'abandonados' => [

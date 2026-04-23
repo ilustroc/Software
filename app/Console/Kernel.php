@@ -12,6 +12,7 @@ class Kernel extends ConsoleKernel
         // Carteras principales (Cada hora)
         $schedule->command('gestiones:propia12-hora')->hourly();
         $schedule->command('gestiones:kpi-hora')->hourly();
+        $schedule->command('gestiones:ivr-hora')->hourly();
         $schedule->command('gestiones:propia3-hora')->hourly();
         $schedule->command('gestiones:amd-hora')->hourly();
         $schedule->command('gestiones:abandonados-hora')->hourly();
