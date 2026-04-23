@@ -13,6 +13,7 @@ class GestionService
             'propia12'    => ['sp' => 'spGestionPropia',   'tabla' => 'Gestiones_1y2',    'fecha_col' => 'dateprocessed'],
             'propia3'     => ['sp' => 'spGestionZigor',    'tabla' => 'Gestiones_Propia3', 'fecha_col' => 'dateprocessed'],
             'kpi'         => ['sp' => 'spGestionKpi',      'tabla' => 'Gestiones_Propia4', 'fecha_col' => 'dateprocessed'],
+            'apdayc'      => ['sp' => 'spGestionApdayc',    'tabla' => 'Gestiones_APDAYC',  'fecha_col' => 'dateprocessed'],
             'amd'         => ['sp' => 'spLlamadasAMD',     'tabla' => 'Llamadas_AMD',      'fecha_col' => 'calldate'],
             'ivr'         => ['sp' => 'spLlamadasIVR',     'tabla' => 'Llamadas_IVR',      'fecha_col' => 'calldate'],
             'abandonados' => ['sp' => 'spLlamadasAbandonadas', 'tabla' => 'Llamadas_Abandonadas', 'fecha_col' => 'fecha_evento'],
@@ -92,6 +93,24 @@ class GestionService
                 'fecha_promesa' => $this->parseFecha($row['fecha_promesa'] ?? $row['fechapromesa'] ?? null),
             ];
 
+            if ($tipo === 'apdayc') {
+                return [
+                    'documento'     => $row['documento'] ?? null,
+                    'socio'         => $row['socio'] ?? null,
+                    'value2'        => $row['value2'] ?? null,
+                    'value1'        => $row['value1'] ?? null,
+                    'fullname'      => $row['fullname'] ?? null,
+                    'fechaAgenda'   => $row['fechaagenda'] ?? null,
+                    'callerid'      => $row['callerid'] ?? null,
+                    'comment'       => $row['comment'] ?? null,
+                    'montoPromesa'  => $this->parseMonto($row['montopromesa'] ?? null),
+                    'nroCuota'      => $row['nrocuota'] ?? null,
+                    'fecha_promesa' => $this->parseFecha($row['fecha_promesa'] ?? null),
+                    'campaign'      => $row['campaign'] ?? null,
+                    'dateprocessed' => $row['dateprocessed'] ?? null,
+                ];
+            }
+            
             if ($tipo === 'kpi') {
                 $item['cliente'] = $row['cliente'] ?? $row['nombre'] ?? null;
                 $item['entidad'] = $row['entidad'] ?? null;

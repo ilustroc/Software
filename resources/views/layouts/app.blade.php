@@ -91,7 +91,12 @@
 
                         <a href="{{ route('gestiones.kpi.form') }}"
                            class="{{ $subBase }} {{ request()->routeIs('gestiones.kpi.*') ? $subActive : '' }}">
-                            Propia 4
+                            KP Invest
+                        </a>
+                        
+                        <a href="{{ route('gestiones.apdayc.form') }}"
+                        class="{{ $subBase }} {{ request()->routeIs('gestiones.apdayc.*') ? $subActive : '' }}">
+                            APDAYC
                         </a>
 
                         <a href="{{ route('gestiones.amd') }}"

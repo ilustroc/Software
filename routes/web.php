@@ -24,6 +24,7 @@ Route::middleware('web')->group(function () {
         Route::get('/propia12',   [GestionController::class, 'formPropia12'])->name('gestiones.propia12.form');
         Route::get('/propia3',    [GestionController::class, 'formPropia3'])->name('gestiones.propia3.form');
         Route::get('/kpi',        [GestionController::class, 'formKpi'])->name('gestiones.kpi.form');
+        Route::get('/apdayc', [GestionController::class, 'formApdayc'])->name('gestiones.apdayc.form');
         Route::get('/amd',        [GestionController::class, 'indexAmd'])->name('gestiones.amd');
         Route::get('/ivr', [GestionController::class, 'indexIvr'])->name('gestiones.ivr');
         Route::get('/abandonados', [GestionController::class, 'indexAbandonados'])->name('gestiones.abandonados');

@@ -20,6 +20,7 @@ class GestionController extends Controller
     public function formPropia12() { return view('gestiones.propia12'); }
     public function formPropia3()  { return view('gestiones.propia3'); }
     public function formKpi()      { return view('gestiones.kpi'); }
+    public function formApdayc()   { return view('gestiones.apdayc'); }
 
     public function indexAmd(Request $request)
     {

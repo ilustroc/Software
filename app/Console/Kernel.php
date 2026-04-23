@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('gestiones:propia12-hora')->hourly();
         $schedule->command('gestiones:kpi-hora')->hourly();
         $schedule->command('gestiones:ivr-hora')->hourly();
+        $schedule->command('gestiones:apdayc-hora')->hourly();
         $schedule->command('gestiones:propia3-hora')->hourly();
         $schedule->command('gestiones:amd-hora')->hourly();
         $schedule->command('gestiones:abandonados-hora')->hourly();
