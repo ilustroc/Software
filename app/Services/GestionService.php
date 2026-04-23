@@ -96,10 +96,12 @@ class GestionService
             if ($tipo === 'apdayc') {
                 return [
                     'documento'     => $row['documento'] ?? null,
+                    'LIC_ID'        => $row['lic_id'] ?? null,
                     'socio'         => $row['socio'] ?? null,
                     'value2'        => $row['value2'] ?? null,
                     'value1'        => $row['value1'] ?? null,
                     'fullname'      => $row['fullname'] ?? null,
+                    'dateprocessed' => $row['dateprocessed'] ?? null,
                     'fechaAgenda'   => $row['fechaagenda'] ?? null,
                     'callerid'      => $row['callerid'] ?? null,
                     'comment'       => $row['comment'] ?? null,

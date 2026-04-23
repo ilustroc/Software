@@ -104,6 +104,11 @@ class GestionController extends Controller
                 'file_name' => 'plantilla_kpi.xlsx',
                 'headers' => ['documento', 'cliente', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'importe_financiamiento', 'nroCuotas', 'fecha_promesa', 'campaign']
             ],
+            'apdayc' => [
+                'tabla' => 'Gestiones_APDAYC',
+                'file_name' => 'plantilla_apdayc.xlsx',
+                'headers' => ['documento', 'socio', 'value2', 'value1', 'fullname', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign']
+            ],
             'amd' => [
                 'tabla' => 'Llamadas_AMD',
                 'file_name' => 'plantilla_amd.xlsx',
