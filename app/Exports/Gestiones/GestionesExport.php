@@ -15,74 +15,114 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithChunkReading, WithColumnFormatting
 {
     public function __construct(
-        private string $tabla,
+        private ?int $carteraId,
         private string $desde,
         private string $hasta,
-        private string $documento = '',
-        private string $tipificacion = ''
-    ) {}
+        private string $dni = '',
+        private string $gestor = '',
+    ) {
+    }
 
     public function query()
     {
-        $desdeFull = $this->desde . ' 00:00:00';
-        $hastaFull = $this->hasta . ' 23:59:59';
+        $query = DB::table('gestiones as g')
+            ->join('carteras as c', 'c.id', '=', 'g.cartera_id')
+            ->select(
+                'c.nombre as cartera',
+                'g.documento',
+                'g.cliente',
+                'g.socio',
+                'g.tipificacion',
+                'g.resultado',
+                'g.asesor',
+                'g.operacion',
+                'g.entidad',
+                'g.subcartera',
+                'g.fecha_gestion',
+                'g.fecha_agenda',
+                'g.telefono',
+                'g.comentario',
+                'g.monto_promesa',
+                'g.nro_cuotas',
+                'g.fecha_promesa',
+                'g.campaign',
+            )
+            ->whereBetween('g.fecha_gestion', [$this->desde . ' 00:00:00', $this->hasta . ' 23:59:59']);
 
-        $q = DB::table($this->tabla)
-            ->whereBetween('dateprocessed', [$desdeFull, $hastaFull]);
-
-        if ($this->documento !== '') {
-            $q->where('documento', 'like', "%{$this->documento}%");
+        if ($this->carteraId) {
+            $query->where('g.cartera_id', $this->carteraId);
         }
 
-        if ($this->tipificacion !== '') {
-            $q->where('value2', 'like', "%{$this->tipificacion}%");
+        if ($this->dni !== '') {
+            $query->where('g.documento', 'like', "%{$this->dni}%");
         }
 
-        return $q->orderByDesc('dateprocessed');
+        if ($this->gestor !== '') {
+            $query->where('g.asesor', 'like', "%{$this->gestor}%");
+        }
+
+        return $query->orderByDesc('g.fecha_gestion');
     }
 
     public function headings(): array
     {
-        // Encabezado universal para las 3 tablas
         return [
-            'Documento', 'Nombre/Cliente', 'Tipificación', 'Resultado', 'Gestor/Usuario',
-            'Operación', 'Entidad', 'Cartera/CTL', 'Fecha Gestión', 'Fecha Agenda',
-            'Teléfono', 'Comentario', 'Pagar/Importe', 'Nro Cuotas', 'Fecha promesa', 'Campaña'
+            'Cartera',
+            'Documento',
+            'Cliente/Socio',
+            'Tipificacion',
+            'Resultado',
+            'Gestor/Usuario',
+            'Operacion',
+            'Entidad',
+            'Subcartera',
+            'Fecha Gestion',
+            'Fecha Agenda',
+            'Telefono',
+            'Comentario',
+            'Monto promesa',
+            'Nro cuotas',
+            'Fecha promesa',
+            'Campana',
         ];
     }
 
-    public function map($r): array
+    public function map($row): array
     {
-        $fmt = fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '';
+        $formatDate = fn ($value) => $value ? Carbon::parse($value)->format('d/m/Y H:i') : '';
 
         return [
-            (string)($r->documento ?? ''),
-            $r->nombre ?? $r->cliente ?? '',
-            $r->value2 ?? '',
-            $r->value1 ?? '',
-            $r->fullname ?? '',
-            (string)($r->operacion ?? ''),
-            $r->entidad ?? $r->ctl ?? '',
-            $r->cartera ?? '',
-            $fmt($r->dateprocessed ?? null),
-            $fmt($r->fechaAgenda ?? null),
-            (string)($r->callerid ?? ''),
-            $r->comment ?? '',
-            $r->pagar_por_cuota ?? $r->importe_financiamiento ?? '',
-            $r->nroCuotas ?? '',
-            $fmt($r->fecha_promesa ?? null),
-            (string)($r->campaign ?? ''),
+            $row->cartera ?? '',
+            (string) ($row->documento ?? ''),
+            $row->cliente ?? $row->socio ?? '',
+            $row->tipificacion ?? '',
+            $row->resultado ?? '',
+            $row->asesor ?? '',
+            (string) ($row->operacion ?? ''),
+            $row->entidad ?? '',
+            $row->subcartera ?? '',
+            $formatDate($row->fecha_gestion ?? null),
+            $formatDate($row->fecha_agenda ?? null),
+            (string) ($row->telefono ?? ''),
+            $row->comentario ?? '',
+            $row->monto_promesa ?? '',
+            $row->nro_cuotas ?? '',
+            $formatDate($row->fecha_promesa ?? null),
+            (string) ($row->campaign ?? ''),
         ];
     }
 
     public function columnFormats(): array
     {
         return [
-            'A' => NumberFormat::FORMAT_TEXT, // Documento
-            'F' => NumberFormat::FORMAT_TEXT, // Operación
-            'K' => NumberFormat::FORMAT_TEXT, // Teléfono
+            'B' => NumberFormat::FORMAT_TEXT,
+            'G' => NumberFormat::FORMAT_TEXT,
+            'L' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
-    public function chunkSize(): int { return 2000; }
+    public function chunkSize(): int
+    {
+        return 2000;
+    }
 }

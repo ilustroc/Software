@@ -14,7 +14,7 @@
         <div class="admin-card">
             <div class="border-b border-slate-100 pb-3 mb-4">
                 <h3 class="text-sm font-bold text-slate-900 uppercase">Sincronización CRM</h3>
-                <p class="text-[11px] text-slate-500 font-mono">Tabla: Llamadas_IVR</p>
+                <p class="text-[11px] text-slate-500 font-mono">Tabla destino: llamadas</p>
             </div>
 
             <form method="POST" action="{{ route('gestiones.generica.cargar', 'ivr') }}" class="space-y-4">

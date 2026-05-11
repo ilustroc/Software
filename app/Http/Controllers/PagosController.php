@@ -2,138 +2,381 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportPagosRequest;
+use App\Http\Requests\StorePagoRequest;
+use App\Models\Cartera;
+use App\Models\Pago;
+use App\Services\CarteraService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Throwable;
 
 class PagosController extends Controller
 {
-    // Mapeo de tipos a tablas y sistemas
-    private function getMeta($tipo) {
-        return match($tipo) {
-            'propia12' => ['tabla' => 'Pagos_1y2', 'sistema' => 1, 'label' => 'Propia 1 y 2'],
-            'propia3'  => ['tabla' => 'Pagos_3',   'sistema' => 3, 'label' => 'Propia 3'],
-            'propia4'  => ['tabla' => 'Pagos_4',   'sistema' => 4, 'label' => 'Propia 4'],
-            default    => abort(404, "Tipo de cartera no válida")
-        };
-    }
+    private const REQUIRED_IMPORT_COLUMNS = [
+        'dni' => 'DNI',
+        'operacion' => 'Operacion',
+        'fecha' => 'Fecha',
+        'moneda' => 'Moneda',
+        'monto' => 'Monto',
+        'gestor' => 'Gestor',
+    ];
 
-    public function index(Request $request, $tipo)
+    public function index(Request $request)
     {
-        if (!session()->has('usuario')) return redirect()->route('login');
+        if (!session()->has('usuario')) {
+            return redirect()->route('login');
+        }
 
-        $meta = $this->getMeta($tipo);
-        $dni = $request->dni;
-        $query = DB::table($meta['tabla'])->orderBy('FECHA', 'desc');
+        $carteras = Cartera::query()
+            ->activa()
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
 
-        if ($dni) {
-            $query->where('DNI', $dni);
+        $carteraId = $request->integer('cartera_id') ?: null;
+        $buscar = trim((string) $request->query('buscar', $request->query('dni', '')));
+
+        $query = Pago::query()
+            ->with('cartera')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id');
+
+        if ($carteraId) {
+            $query->where('cartera_id', $carteraId);
+        }
+
+        if ($buscar !== '') {
+            $query->where(function ($subquery) use ($buscar) {
+                $subquery
+                    ->where('dni', 'like', "%{$buscar}%")
+                    ->orWhere('operacion', 'like', "%{$buscar}%")
+                    ->orWhere('gestor', 'like', "%{$buscar}%");
+            });
         }
 
         $pagos = $query->paginate(10)->appends($request->query());
-        
-        // Retornamos la vista correspondiente (puedes usar una sola vista genérica también)
-        return view("pagos.$tipo", compact('pagos', 'dni', 'tipo'));
+
+        return view('pagos.index', compact('pagos', 'carteras', 'carteraId', 'buscar'));
     }
 
-    public function template($tipo)
+    public function legacy(string $tipo, CarteraService $carteras)
     {
-        $meta = $this->getMeta($tipo);
-        $headers = [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => "attachment; filename=\"plantilla_pagos_{$tipo}.csv\"",
-        ];
-
-        return response()->stream(function () {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['DNI', 'OPERACION', 'MONEDA', 'FECHA', 'MONTO', 'GESTOR']);
-            fclose($out);
-        }, 200, $headers);
-    }
-
-    public function store(Request $request, $tipo)
-    {
-        $meta = $this->getMeta($tipo);
-        $data = $request->validate([
-            'dni'       => ['required','string','max:15'],
-            'operacion' => ['required','string','max:50'],
-            'moneda'    => ['nullable','string','max:20'],
-            'fecha'     => ['required','date'],
-            'monto'     => ['required','numeric','min:0.01'],
-            'gestor'    => ['nullable','string','max:100'],
-        ]);
-
-        $data['SISTEMA'] = $meta['sistema'];
-
         try {
-            DB::table($meta['tabla'])->insert($data);
+            $cartera = $carteras->findBySlugOrFail($tipo);
+
+            return redirect()->route('pagos.index', ['cartera_id' => $cartera->id]);
+        } catch (Throwable) {
+            return redirect()->route('pagos.index');
+        }
+    }
+
+    public function template()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        foreach (array_values(self::REQUIRED_IMPORT_COLUMNS) as $index => $label) {
+            $sheet->setCellValueByColumnAndRow($index + 1, 1, $label);
+            $sheet->getColumnDimensionByColumn($index + 1)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'plantilla_pagos.xlsx');
+    }
+
+    public function store(StorePagoRequest $request)
+    {
+        try {
+            Pago::query()->create($request->validated() + ['origen' => 'manual']);
+
             return back()->with('msg', 'Pago registrado correctamente.');
         } catch (Throwable $e) {
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', $this->databaseErrorMessage($e, 'registrar el pago'));
         }
     }
 
-    public function upload(Request $request, $tipo)
+    public function upload(ImportPagosRequest $request)
     {
-        $meta = $this->getMeta($tipo);
-        $request->validate(['archivo' => ['required','file','mimes:csv,txt']]);
+        $data = $request->validated();
+        $cartera = Cartera::query()->findOrFail($data['cartera_id']);
 
         try {
-            $path = $request->file('archivo')->getRealPath();
-            $rows = array_map('str_getcsv', file($path));
-            $insert = [];
+            [$insert, $errors] = $this->readImportRows(
+                $request->file('archivo')->getRealPath(),
+                (int) $cartera->id,
+            );
 
-            foreach ($rows as $index => $r) {
-                if ($index === 0 && strtoupper(trim($r[0] ?? '')) === 'DNI') continue;
-                if (count($r) < 5 || empty($r[0])) continue;
-
-                $insert[] = [
-                    'SISTEMA'   => $meta['sistema'],
-                    'DNI'       => trim($r[0]),
-                    'OPERACION' => trim($r[1]),
-                    'MONEDA'    => trim($r[2]) ?: null,
-                    'FECHA'     => date('Y-m-d', strtotime(str_replace('/', '-', $r[3]))),
-                    'MONTO'     => (float) str_replace([',', ' '], ['', ''], $r[4]),
-                    'GESTOR'    => trim($r[5] ?? null),
-                ];
+            if ($errors !== []) {
+                return back()->withInput()->with('error', $this->formatImportErrors($errors));
             }
 
-            foreach (array_chunk($insert, 200) as $chunk) {
-                DB::table($meta['tabla'])->insert($chunk);
+            if ($insert === []) {
+                return back()->withInput()->with('error', 'El archivo no contiene pagos validos para importar.');
             }
 
-            return back()->with('msg', "Carga masiva en {$meta['label']} completada: " . count($insert) . " registros.");
+            DB::transaction(function () use ($insert) {
+                foreach (array_chunk($insert, 500) as $chunk) {
+                    Pago::query()->insert($chunk);
+                }
+            });
+
+            return back()->with('msg', "Carga XLSX en {$cartera->nombre} completada: " . count($insert) . ' registros.');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         } catch (Throwable $e) {
-            return back()->with('error', 'Error al cargar: ' . $e->getMessage());
+            return back()->withInput()->with('error', $this->databaseErrorMessage($e, 'cargar el XLSX'));
         }
     }
 
-    public function update(Request $request, $tipo, $id)
+    public function update(Request $request, Pago $pago)
     {
-        $meta = $this->getMeta($tipo);
         $data = $request->validate([
-            'moneda' => ['nullable','string','max:20'],
-            'fecha'  => ['required','date'],
-            'monto'  => ['required','numeric','min:0.01'],
-            'gestor' => ['nullable','string','max:100'],
+            'cartera_id' => ['required', 'integer', 'exists:carteras,id'],
+            'moneda' => ['required', 'string', 'max:20'],
+            'fecha' => ['required', 'date'],
+            'monto' => ['required', 'numeric', 'min:0.01'],
+            'gestor' => ['nullable', 'string', 'max:150'],
         ]);
 
         try {
-            DB::table($meta['tabla'])->where('id', $id)->update($data);
+            $pago->update($data);
+
             return back()->with('msg', 'Pago actualizado.');
         } catch (Throwable $e) {
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->with('error', $this->databaseErrorMessage($e, 'actualizar el pago'));
         }
     }
 
-    public function destroy($tipo, $id)
+    public function destroy(Pago $pago)
     {
-        $meta = $this->getMeta($tipo);
         try {
-            DB::table($meta['tabla'])->where('id', $id)->delete();
+            $pago->delete();
+
             return back()->with('msg', 'Pago eliminado.');
         } catch (Throwable $e) {
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->with('error', $this->databaseErrorMessage($e, 'eliminar el pago'));
+        }
+    }
+
+    private function databaseErrorMessage(Throwable $e, string $action): string
+    {
+        if ($e instanceof QueryException && str_contains($e->getMessage(), '1142')) {
+            return "No se pudo {$action}: el usuario de base de datos no tiene permiso para escribir en la tabla pagos. Habilita INSERT y UPDATE sobre la base configurada.";
+        }
+
+        return "No se pudo {$action}: " . $e->getMessage();
+    }
+
+    private function readImportRows(string $path, int $carteraId): array
+    {
+        $spreadsheet = IOFactory::load($path);
+        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+        $headerRow = $rows[1] ?? null;
+
+        if (!$headerRow) {
+            throw new \InvalidArgumentException('El XLSX no tiene fila de encabezados.');
+        }
+
+        $headerMap = $this->buildHeaderMap($headerRow);
+        $now = now();
+        $insert = [];
+        $errors = [];
+
+        unset($rows[1]);
+
+        foreach ($rows as $rowNumber => $row) {
+            if ($this->isBlankRow($row, $headerMap)) {
+                continue;
+            }
+
+            $rowErrors = [];
+            $dni = $this->cellValue($row, $headerMap['dni']);
+            $operacion = $this->cellValue($row, $headerMap['operacion']);
+            $fecha = $this->parseFecha($row[$headerMap['fecha']] ?? null);
+            $moneda = $this->cellValue($row, $headerMap['moneda']);
+            $monto = $this->parseMonto($row[$headerMap['monto']] ?? null);
+            $gestor = $this->cellValue($row, $headerMap['gestor']);
+
+            if ($dni === '') {
+                $rowErrors[] = "Fila {$rowNumber}: DNI obligatorio.";
+            }
+
+            if ($operacion === '') {
+                $rowErrors[] = "Fila {$rowNumber}: Operacion obligatoria.";
+            }
+
+            if ($fecha === null) {
+                $rowErrors[] = "Fila {$rowNumber}: Fecha invalida.";
+            }
+
+            if ($monto === null || $monto <= 0) {
+                $rowErrors[] = "Fila {$rowNumber}: Monto debe ser numerico y mayor a cero.";
+            }
+
+            if ($rowErrors !== []) {
+                array_push($errors, ...$rowErrors);
+                continue;
+            }
+
+            $insert[] = [
+                'cartera_id' => $carteraId,
+                'dni' => $dni,
+                'operacion' => $operacion,
+                'fecha' => $fecha,
+                'moneda' => $moneda !== '' ? $moneda : null,
+                'monto' => $monto,
+                'gestor' => $gestor !== '' ? $gestor : null,
+                'origen' => 'xlsx',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        return [$insert, $errors];
+    }
+
+    private function buildHeaderMap(array $headerRow): array
+    {
+        $available = [];
+
+        foreach ($headerRow as $column => $label) {
+            $normalized = $this->normalizeHeader($label);
+
+            if ($normalized !== '') {
+                $available[$normalized] = $column;
+            }
+        }
+
+        $headerMap = [];
+        $missing = [];
+
+        foreach (self::REQUIRED_IMPORT_COLUMNS as $key => $label) {
+            $normalized = $this->normalizeHeader($label);
+
+            if (!isset($available[$normalized])) {
+                $missing[] = $label;
+                continue;
+            }
+
+            $headerMap[$key] = $available[$normalized];
+        }
+
+        if ($missing !== []) {
+            throw new \InvalidArgumentException(
+                'Faltan columnas obligatorias en el Excel: ' . implode(', ', $missing) . '.'
+            );
+        }
+
+        return $headerMap;
+    }
+
+    private function isBlankRow(array $row, array $headerMap): bool
+    {
+        foreach ($headerMap as $column) {
+            if ($this->cellValue($row, $column) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function cellValue(array $row, string $column): string
+    {
+        return trim((string) ($row[$column] ?? ''));
+    }
+
+    private function normalizeHeader(mixed $value): string
+    {
+        return Str::of((string) $value)
+            ->ascii()
+            ->lower()
+            ->replace([' ', '_', '-', '.', ':'], '')
+            ->toString();
+    }
+
+    private function formatImportErrors(array $errors): string
+    {
+        $visible = array_slice($errors, 0, 8);
+        $suffix = count($errors) > count($visible)
+            ? ' Hay ' . (count($errors) - count($visible)) . ' errores adicionales.'
+            : '';
+
+        return 'El archivo contiene errores: ' . implode(' ', $visible) . $suffix;
+    }
+
+    private function parseMonto(mixed $valor): ?float
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        if (is_numeric($valor)) {
+            return (float) $valor;
+        }
+
+        $limpio = preg_replace('/[^\d,.\-]/', '', (string) $valor);
+
+        if ($limpio === '') {
+            return null;
+        }
+
+        if (str_contains($limpio, ',') && str_contains($limpio, '.')) {
+            $limpio = strrpos($limpio, ',') > strrpos($limpio, '.')
+                ? str_replace(',', '.', str_replace('.', '', $limpio))
+                : str_replace(',', '', $limpio);
+        } else {
+            $limpio = str_replace(',', '.', $limpio);
+        }
+
+        return is_numeric($limpio) ? (float) $limpio : null;
+    }
+
+    private function parseFecha(mixed $valor): ?string
+    {
+        if ($valor instanceof \DateTimeInterface) {
+            return $valor->format('Y-m-d');
+        }
+
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        if (is_numeric($valor)) {
+            try {
+                return ExcelDate::excelToDateTimeObject((float) $valor)->format('Y-m-d');
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        $valor = trim((string) $valor);
+        $formatos = ['d/m/Y', 'd-m-Y', 'Y-m-d', 'm/d/Y', 'm-d-Y', 'd/m/Y H:i:s', 'Y-m-d H:i:s'];
+
+        foreach ($formatos as $formato) {
+            try {
+                $date = Carbon::createFromFormat($formato, $valor);
+                return $date->toDateString();
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        try {
+            return Carbon::parse(str_replace('/', '-', $valor))->toDateString();
+        } catch (Throwable) {
+            return null;
         }
     }
 }

@@ -22,8 +22,20 @@
     @apply inline-flex w-full items-center justify-center rounded-xl bg-fuchsia-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-fuchsia-800 focus:outline-none focus:ring-4 focus:ring-fuchsia-200;
 }
 
+@utility btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+}
+
 @utility card-soft {
     @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
+@utility btn-muted {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100;
+}
+
+@utility icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50;
 }
 
 @utility alert-error {
@@ -76,4 +88,40 @@
 
 .toast-close {
     @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700;
+}
+
+.modal-shell {
+    @apply fixed inset-0 z-50 flex items-center justify-center px-4;
+}
+
+.modal-backdrop {
+    @apply absolute inset-0 bg-slate-950/50;
+}
+
+.modal-card {
+    @apply relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl;
+}
+
+.modal-head {
+    @apply flex items-center justify-between border-b border-slate-200 px-5 py-4;
+}
+
+.modal-body {
+    @apply grid gap-4 px-5 py-5;
+}
+
+.modal-footer {
+    @apply flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4;
+}
+
+.status-pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.status-pill-success {
+    @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200;
+}
+
+.status-pill-muted {
+    @apply bg-slate-100 text-slate-600 ring-1 ring-slate-200;
 }

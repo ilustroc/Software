@@ -13,9 +13,23 @@
 </head>
 
 @php
+    $isDashboard = request()->routeIs('dashboard') || request()->routeIs('dashboard.index');
     $openGestiones = request()->routeIs('gestiones.*');
     $openPagos     = request()->routeIs('pagos.*');
     $openReportes  = request()->routeIs('reportes.*');
+    $openConfig    = request()->routeIs('configuracion.*');
+
+    $layoutHoy = now()->toDateString();
+    $layoutPagosHoy = \App\Models\Pago::query()->whereDate('fecha', $layoutHoy)->count();
+    $layoutGestionesHoy = \App\Models\Gestion::query()->whereDate('fecha_gestion', $layoutHoy)->count();
+    $layoutCarteraMayor = \Illuminate\Support\Facades\DB::table('pagos')
+        ->join('carteras', 'carteras.id', '=', 'pagos.cartera_id')
+        ->whereNull('pagos.deleted_at')
+        ->whereDate('pagos.fecha', $layoutHoy)
+        ->select('carteras.nombre', \Illuminate\Support\Facades\DB::raw('sum(pagos.monto) as total'))
+        ->groupBy('carteras.id', 'carteras.nombre')
+        ->orderByDesc('total')
+        ->first();
 
     $linkBase   = 'nav-link';
     $linkActive = 'is-active';
@@ -28,7 +42,8 @@
     x-data="sidebarLayout({
         openGestiones: @js($openGestiones),
         openPagos: @js($openPagos),
-        openReportes: @js($openReportes)
+        openReportes: @js($openReportes),
+        openConfig: @js($openConfig)
     })"
     class="panel-shell"
 >
@@ -60,11 +75,20 @@
             {{-- Navegación --}}
             <nav class="panel-nav">
                 <div class="nav-section">
-                    <button
-                        type="button"
-                        class="{{ $linkBase }} {{ $openGestiones ? $linkActive : '' }}"
-                        @click="toggle('openGestiones')"
-                    >
+                    <a href="{{ route('dashboard') }}"
+                       class="{{ $linkBase }} {{ $isDashboard ? $linkActive : '' }}">
+                        <span class="nav-link-left">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 13h6V4H4v9ZM14 20h6V4h-6v16ZM4 20h6v-3H4v3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <a href="{{ route('gestiones.index') }}"
+                       class="{{ $linkBase }} {{ $openGestiones ? $linkActive : '' }}">
                         <span class="nav-link-left">
                             <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
                                 <path d="M16 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="2"/>
@@ -72,56 +96,12 @@
                             </svg>
                             <span>Cargas de Gestiones</span>
                         </span>
-
-                        <svg class="nav-chevron" :class="openGestiones ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
-                            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-
-                    <div x-cloak x-show="openGestiones" x-collapse class="nav-submenu">
-                        <a href="{{ route('gestiones.propia12.form') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('gestiones.propia12.*') ? $subActive : '' }}">
-                            Propia 1 y 2
-                        </a>
-
-                        <a href="{{ route('gestiones.propia3.form') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('gestiones.propia3.*') ? $subActive : '' }}">
-                            Propia 3
-                        </a>
-
-                        <a href="{{ route('gestiones.kpi.form') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('gestiones.kpi.*') ? $subActive : '' }}">
-                            KP Invest
-                        </a>
-                        
-                        <a href="{{ route('gestiones.apdayc.form') }}"
-                        class="{{ $subBase }} {{ request()->routeIs('gestiones.apdayc.*') ? $subActive : '' }}">
-                            APDAYC
-                        </a>
-
-                        <a href="{{ route('gestiones.amd') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('gestiones.amd') ? $subActive : '' }}">
-                            AMD
-                        </a>
-
-                        <a href="{{ route('gestiones.ivr') }}"
-                        class="{{ $subBase }} {{ request()->routeIs('gestiones.ivr') ? $subActive : '' }}">
-                            IVR
-                        </a>
-                        
-                        <a href="{{ route('gestiones.abandonados') }}"
-                           class="{{ $subBase }} {{ request()->routeIs('gestiones.abandonados') ? $subActive : '' }}">
-                            Abandonados
-                        </a>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="nav-section">
-                    <button
-                        type="button"
-                        class="{{ $linkBase }} {{ $openPagos ? $linkActive : '' }}"
-                        @click="toggle('openPagos')"
-                    >
+                    <a href="{{ route('pagos.index') }}"
+                       class="{{ $linkBase }} {{ $openPagos ? $linkActive : '' }}">
                         <span class="nav-link-left">
                             <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
                                 <path d="M3 7h18v10H3V7Z" stroke="currentColor" stroke-width="2"/>
@@ -129,31 +109,7 @@
                             </svg>
                             <span>Cargas de Pagos</span>
                         </span>
-
-                        <svg class="nav-chevron" :class="openPagos ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none">
-                            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-
-                    <div x-cloak x-show="openPagos" x-collapse class="nav-submenu">
-                        {{-- Propia 1 y 2 --}}
-                        <a href="{{ route('pagos.index', 'propia12') }}"
-                        class="{{ $subBase }} {{ request()->is('pagos/propia12*') ? $subActive : '' }}">
-                            Propia 1 y 2
-                        </a>
-
-                        {{-- Propia 3 --}}
-                        <a href="{{ route('pagos.index', 'propia3') }}"
-                        class="{{ $subBase }} {{ request()->is('pagos/propia3*') ? $subActive : '' }}">
-                            Propia 3
-                        </a>
-
-                        {{-- Propia 4 --}}
-                        <a href="{{ route('pagos.index', 'propia4') }}"
-                        class="{{ $subBase }} {{ request()->is('pagos/propia4*') ? $subActive : '' }}">
-                            Propia 4
-                        </a>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="nav-section">
@@ -176,32 +132,14 @@
                     </button>
 
                     <div x-cloak x-show="openReportes" x-collapse class="nav-submenu">
-                        <div class="nav-subtitle">Gestiones</div>
-
-                        {{-- Reporte Propia 1 y 2 --}}
-                        <a href="{{ route('reportes.gestiones.index', 'propia12') }}"
-                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia12*') ? $subActive : '' }}">
-                            Propia 1 y 2
-                        </a>
-
-                        {{-- Reporte Propia 3 --}}
-                        <a href="{{ route('reportes.gestiones.index', 'propia3') }}"
-                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia3*') ? $subActive : '' }}">
-                            Propia 3
-                        </a>
-
-                        {{-- Reporte Propia 4 --}}
-                        <a href="{{ route('reportes.gestiones.index', 'propia4') }}"
-                        class="{{ $subBase }} {{ request()->is('reportes/gestiones/propia4*') ? $subActive : '' }}">
-                            Propia 4
-                        </a>
-
-                        <div class="nav-subtitle mt-2">Pagos</div>
-
-                        {{-- Reporte General de Pagos --}}
                         <a href="{{ route('reportes.pagos.index') }}"
-                        class="{{ $subBase }} {{ request()->routeIs('reportes.pagos.*') ? $subActive : '' }}">
+                           class="{{ $subBase }} {{ request()->routeIs('reportes.pagos.*') ? $subActive : '' }}">
                             Reporte de pagos
+                        </a>
+
+                        <a href="{{ route('reportes.gestiones.index') }}"
+                           class="{{ $subBase }} {{ request()->routeIs('reportes.gestiones.*') ? $subActive : '' }}">
+                            Reporte de gestiones
                         </a>
                     </div>
                 </div>
@@ -211,8 +149,19 @@
                 <div class="nav-section">
                     <div class="nav-subtitle px-3">Configuración</div>
 
-                    <a href="{{ route('parametros.tipificaciones.index') }}"
-                       class="{{ $linkBase }} mt-1 {{ request()->routeIs('parametros.tipificaciones.*') ? $linkActive : '' }}">
+                    <a href="{{ route('configuracion.carteras.index') }}"
+                       class="{{ $linkBase }} mt-1 {{ request()->routeIs('configuracion.carteras.*') ? $linkActive : '' }}">
+                        <span class="nav-link-left">
+                            <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>Carteras</span>
+                        </span>
+                    </a>
+
+                    <a href="{{ route('configuracion.tipificaciones.index') }}"
+                       class="{{ $linkBase }} mt-1 {{ request()->routeIs('configuracion.tipificaciones.*') ? $linkActive : '' }}">
                         <span class="nav-link-left">
                             <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
                                 <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -269,6 +218,12 @@
                 </div>
 
                 <div class="panel-topbar-right">
+                    <div class="panel-mini-summary">
+                        <span>Pagos hoy: <strong>{{ number_format($layoutPagosHoy) }}</strong></span>
+                        <span>Gestiones hoy: <strong>{{ number_format($layoutGestionesHoy) }}</strong></span>
+                        <span>Mayor pago: <strong>{{ $layoutCarteraMayor->nombre ?? 'Sin registros' }}</strong></span>
+                    </div>
+
                     <span class="panel-topbar-chip">
                         {{ now()->format('d/m/Y') }}
                     </span>

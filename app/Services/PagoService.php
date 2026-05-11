@@ -2,67 +2,71 @@
 
 namespace App\Services;
 
+use App\Models\Pago;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class PagoService
 {
-    private function getMetadata(string $tipo)
+    public function __construct(private CarteraService $carteras)
     {
-        return match($tipo) {
-            'propia12' => ['tabla' => 'Pagos_1y2', 'sistema' => 1],
-            'propia3'  => ['tabla' => 'Pagos_3',   'sistema' => 3],
-            'propia4'  => ['tabla' => 'Pagos_4',   'sistema' => 4],
-            default    => throw new \Exception("Tipo de pago [$tipo] no soportado."),
-        };
     }
 
-    public function procesarCargaMasiva(string $tipo, $path)
+    public function procesarCargaMasiva(string $tipo, string $path): int
     {
-        $meta = $this->getMetadata($tipo);
+        $cartera = $this->carteras->findBySlugOrFail($tipo);
         $rows = array_map('str_getcsv', file($path));
+        $now = now();
         $insert = [];
 
-        foreach ($rows as $index => $r) {
-            // Limpieza básica de la fila
-            $r = array_map('trim', $r);
+        foreach ($rows as $index => $row) {
+            $row = array_map(fn ($value) => trim((string) $value), $row);
 
-            // Saltar encabezado si existe
-            if ($index === 0 && strtoupper($r[0]) === 'DNI') continue;
+            if ($index === 0 && strtoupper($row[0] ?? '') === 'DNI') {
+                continue;
+            }
 
-            // Se espera: DNI(0), OPERACION(1), MONEDA(2), FECHA(3), MONTO(4), GESTOR(5)
-            if (count($r) < 5 || empty($r[0])) continue;
+            if (count($row) < 5 || ($row[0] ?? '') === '') {
+                continue;
+            }
 
             $insert[] = [
-                'SISTEMA'   => $meta['sistema'],
-                'DNI'       => $r[0],
-                'OPERACION' => $r[1],
-                'MONEDA'    => $r[2] ?: null,
-                'FECHA'     => $this->parseFecha($r[3]),
-                'MONTO'     => $this->parseMonto($r[4]),
-                'GESTOR'    => $r[5] ?? null,
+                'cartera_id' => $cartera->id,
+                'dni' => $row[0],
+                'operacion' => $row[1] ?? '',
+                'moneda' => ($row[2] ?? '') !== '' ? $row[2] : null,
+                'fecha' => $this->parseFecha($row[3] ?? null),
+                'monto' => $this->parseMonto($row[4] ?? null),
+                'gestor' => ($row[5] ?? '') !== '' ? $row[5] : null,
+                'origen' => 'csv',
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
         }
 
-        if (empty($insert)) return 0;
-
-        foreach (array_chunk($insert, 500) as $chunk) {
-            DB::table($meta['tabla'])->insert($chunk);
-        }
+        DB::transaction(function () use ($insert) {
+            foreach (array_chunk($insert, 500) as $chunk) {
+                Pago::query()->insert($chunk);
+            }
+        });
 
         return count($insert);
     }
 
-    private function parseMonto($valor) {
-        $limpio = str_replace(['S/', 's/', '$', ' ', ','], ['', '', '', '', ''], $valor);
-        // Si el monto viene con coma decimal (ej: 100,50), lo convertimos a punto
+    private function parseMonto(?string $valor): float
+    {
+        $limpio = str_replace(['S/', 's/', '$', ' '], '', (string) $valor);
         $limpio = str_replace(',', '.', $limpio);
-        return is_numeric($limpio) ? (float)$limpio : 0.00;
+
+        return is_numeric($limpio) ? (float) $limpio : 0.00;
     }
 
-    private function parseFecha($valor) {
-        if (!$valor) return date('Y-m-d');
-        $ts = strtotime(str_replace('/', '-', $valor));
-        return $ts ? date('Y-m-d', $ts) : date('Y-m-d');
+    private function parseFecha(?string $valor): string
+    {
+        if (!$valor) {
+            return now()->toDateString();
+        }
+
+        return Carbon::parse(str_replace('/', '-', $valor))->toDateString();
     }
 }

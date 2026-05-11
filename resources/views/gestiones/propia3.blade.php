@@ -43,7 +43,7 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                 <div>
                     <h3 class="text-sm font-bold text-slate-900 uppercase">Carga Manual XLSX</h3>
-                    <p class="text-[11px] text-slate-500 font-mono">Tabla: Gestiones_Propia3</p>
+                    <p class="text-[11px] text-slate-500 font-mono">Tabla destino: gestiones</p>
                 </div>
                 <a href="{{ route('gestiones.manual.plantilla', 'propia3') }}" class="btn-outline">
                     Descargar Estructura

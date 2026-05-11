@@ -2,156 +2,243 @@
 
 namespace App\Services;
 
+use App\Models\Gestion;
+use App\Models\Llamada;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class GestionService
 {
-    private function getMetadata(string $tipo)
+    public function __construct(private CarteraService $carteras)
     {
-        return match($tipo) {
-            'propia12'    => ['sp' => 'spGestionPropia',   'tabla' => 'Gestiones_1y2',    'fecha_col' => 'dateprocessed'],
-            'propia3'     => ['sp' => 'spGestionZigor',    'tabla' => 'Gestiones_Propia3', 'fecha_col' => 'dateprocessed'],
-            'kpi'         => ['sp' => 'spGestionKpi',      'tabla' => 'Gestiones_Propia4', 'fecha_col' => 'dateprocessed'],
-            'apdayc'      => ['sp' => 'spGestionApdayc',    'tabla' => 'Gestiones_APDAYC',  'fecha_col' => 'dateprocessed'],
-            'amd'         => ['sp' => 'spLlamadasAMD',     'tabla' => 'Llamadas_AMD',      'fecha_col' => 'calldate'],
-            'ivr'         => ['sp' => 'spLlamadasIVR',     'tabla' => 'Llamadas_IVR',      'fecha_col' => 'calldate'],
-            'abandonados' => ['sp' => 'spLlamadasAbandonadas', 'tabla' => 'Llamadas_Abandonadas', 'fecha_col' => 'fecha_evento'],
-            default       => throw new \Exception("Tipo de gestión [$tipo] no soportado."),
+    }
+
+    private function getMetadata(string $tipo): array
+    {
+        return match ($tipo) {
+            'propia12' => ['sp' => 'spGestionPropia', 'kind' => 'gestion', 'cartera' => 'propia12'],
+            'propia3' => ['sp' => 'spGestionZigor', 'kind' => 'gestion', 'cartera' => 'propia3'],
+            'kpi', 'kp-invest', 'propia4' => ['sp' => 'spGestionKpi', 'kind' => 'gestion', 'cartera' => 'kp-invest'],
+            'apdayc' => ['sp' => 'spGestionApdayc', 'kind' => 'gestion', 'cartera' => 'apdayc'],
+            'amd' => ['sp' => 'spLlamadasAMD', 'kind' => 'llamada', 'tipo' => 'amd'],
+            'ivr' => ['sp' => 'spLlamadasIVR', 'kind' => 'llamada', 'tipo' => 'ivr'],
+            'abandonados' => ['sp' => 'spLlamadasAbandonadas', 'kind' => 'llamada', 'tipo' => 'abandonados'],
+            default => throw new \InvalidArgumentException("Tipo de gestion [$tipo] no soportado."),
         };
     }
 
-    public function sincronizar(string $tipo, $desde, $hasta)
+    public function sincronizar(string $tipo, string $desde, string $hasta): int
     {
         $meta = $this->getMetadata($tipo);
-
-        $desdeFull = (strpos($desde, ':') !== false) ? $desde : $desde . ' 00:00:00';
-        $hastaFull = (strpos($hasta, ':') !== false) ? $hasta : $hasta . ' 23:59:59';
+        $desdeFull = str_contains($desde, ':') ? $desde : $desde . ' 00:00:00';
+        $hastaFull = str_contains($hasta, ':') ? $hasta : $hasta . ' 23:59:59';
 
         $rows = DB::connection('crm')->select("CALL {$meta['sp']}(?, ?)", [$desdeFull, $hastaFull]);
-        if (empty($rows)) return 0;
 
-        // AMD: excluir campañas IVR_*
-        if ($tipo === 'amd') {
-            $rows = array_filter($rows, function ($r) {
-                $row = array_change_key_case((array)$r, CASE_LOWER);
-                $campaign = strtoupper(trim((string)($row['campaign'] ?? '')));
-                return !str_starts_with($campaign, 'IVR_');
-            });
-
-            $rows = array_values($rows);
+        if (empty($rows)) {
+            return 0;
         }
 
-        if (empty($rows)) return 0;
+        if (($meta['tipo'] ?? null) === 'amd') {
+            $rows = array_values(array_filter($rows, function ($row) {
+                $data = array_change_key_case((array) $row, CASE_LOWER);
+                $campaign = strtoupper(trim((string) ($data['campaign'] ?? '')));
 
-        $data = array_map(function($r) use ($tipo) {
-            $row = array_change_key_case((array)$r, CASE_LOWER);
-            
-            if ($tipo === 'amd' || $tipo === 'ivr') {
-                return [
-                    'calldate'    => $row['calldate'] ?? null,
-                    'campaign'    => $row['campaign'] ?? null,
-                    'dst'         => $row['dst'] ?? null,
-                    'disposition' => $row['disposition'] ?? null,
-                    'userfield'   => $row['userfield'] ?? null,
-                    'contact'     => $row['contact'] ?? null,
-                    'dialbase'    => $row['dialbase'] ?? null,
-                    'doc'         => $row['doc'] ?? null,
-                ];
-            }
+                return !str_starts_with($campaign, 'IVR_');
+            }));
+        }
 
-            if ($tipo === 'abandonados') {
-                return [
-                    'fecha_evento' => $row['datetime'] ?? null,
-                    'event'        => $row['event'] ?? null,
-                    'callidnum'    => $row['callidnum'] ?? null,
-                    'guid'         => $row['guid'] ?? null,
-                    'queue'        => $row['queue'] ?? null,
-                    'enterdate'    => $row['enterdate'] ?? null,
-                    'posabandon'   => $row['posabandon'] ?? null,
-                    'posoriginal'  => $row['posoriginal'] ?? null,
-                    'callerid'     => $row['callerid'] ?? null,
-                    'timewait'     => $row['timewait'] ?? null,
-                    'documento'    => $row['documento'] ?? null,
-                ];
-            }
+        if (empty($rows)) {
+            return 0;
+        }
 
-            $montoRaw = $row['pagar_por_cuota'] ?? $row['importecuota'] ?? $row['importe_financiamiento'] ?? $row['importefinanciamiento'] ?? null;
-            
-            $item = [
-                'documento'     => $row['documento'] ?? null,
-                'value2'        => $row['value2'] ?? null,
-                'value1'        => $row['value1'] ?? null,
-                'fullname'      => $row['fullname'] ?? null,
-                'operacion'     => $row['operacion'] ?? null,
-                'dateprocessed' => $row['dateprocessed'] ?? null,
-                'fechaAgenda'   => $row['fechaagenda'] ?? null,
-                'callerid'      => $row['callerid'] ?? null,
-                'comment'       => $row['comment'] ?? null,
-                'nroCuotas'     => $row['nrocuotas'] ?? null,
-                'campaign'      => $row['campaign'] ?? null,
-                'fecha_promesa' => $this->parseFecha($row['fecha_promesa'] ?? $row['fechapromesa'] ?? null),
+        return $meta['kind'] === 'llamada'
+            ? $this->guardarLlamadas($meta['tipo'], $rows, $desdeFull, $hastaFull)
+            : $this->guardarGestiones($meta['cartera'], $rows, $desdeFull, $hastaFull);
+    }
+
+    private function guardarGestiones(string $carteraSlug, array $rows, string $desde, string $hasta): int
+    {
+        $cartera = $this->carteras->findBySlugOrFail($carteraSlug);
+        $now = now();
+        $data = array_map(function ($row) use ($cartera, $now) {
+            $source = array_change_key_case((array) $row, CASE_LOWER);
+            $monto = $this->firstValue($source, 'pagar_por_cuota', 'importecuota', 'importe_financiamiento', 'importefinanciamiento', 'montopromesa');
+
+            return [
+                'cartera_id' => $cartera->id,
+                'documento' => $this->firstValue($source, 'documento'),
+                'licencia_id' => $this->firstValue($source, 'lic_id'),
+                'socio' => $this->firstValue($source, 'socio'),
+                'cliente' => $this->firstValue($source, 'nombre', 'cliente', 'socio'),
+                'tipificacion' => $this->firstValue($source, 'value2'),
+                'resultado' => $this->firstValue($source, 'value1'),
+                'asesor' => $this->firstValue($source, 'fullname'),
+                'operacion' => $this->firstValue($source, 'operacion'),
+                'entidad' => $this->firstValue($source, 'entidad'),
+                'subcartera' => $this->firstValue($source, 'cartera', 'ctl'),
+                'fecha_gestion' => $this->parseFecha($this->firstValue($source, 'dateprocessed')),
+                'fecha_agenda' => $this->parseFecha($this->firstValue($source, 'fechaagenda')),
+                'telefono' => $this->firstValue($source, 'callerid'),
+                'comentario' => $this->firstValue($source, 'comment'),
+                'monto_promesa' => $this->parseMonto($monto),
+                'nro_cuotas' => $this->parseEntero($this->firstValue($source, 'nrocuotas', 'nrocuota')),
+                'fecha_promesa' => $this->parseFecha($this->firstValue($source, 'fecha_promesa', 'fechapromesa')),
+                'campaign' => $this->firstValue($source, 'campaign'),
+                'origen' => 'crm',
+                'metadata' => json_encode($source, JSON_UNESCAPED_UNICODE),
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
-
-            if ($tipo === 'apdayc') {
-                return [
-                    'documento'     => $row['documento'] ?? null,
-                    'LIC_ID'        => $row['lic_id'] ?? null,
-                    'socio'         => $row['socio'] ?? null,
-                    'value2'        => $row['value2'] ?? null,
-                    'value1'        => $row['value1'] ?? null,
-                    'fullname'      => $row['fullname'] ?? null,
-                    'dateprocessed' => $row['dateprocessed'] ?? null,
-                    'fechaAgenda'   => $row['fechaagenda'] ?? null,
-                    'callerid'      => $row['callerid'] ?? null,
-                    'comment'       => $row['comment'] ?? null,
-                    'montoPromesa'  => $this->parseMonto($row['montopromesa'] ?? null),
-                    'nroCuota'      => $row['nrocuota'] ?? null,
-                    'fecha_promesa' => $this->parseFecha($row['fecha_promesa'] ?? null),
-                    'campaign'      => $row['campaign'] ?? null,
-                    'dateprocessed' => $row['dateprocessed'] ?? null,
-                ];
-            }
-            
-            if ($tipo === 'kpi') {
-                $item['cliente'] = $row['cliente'] ?? $row['nombre'] ?? null;
-                $item['entidad'] = $row['entidad'] ?? null;
-                $item['importe_financiamiento'] = $this->parseMonto($montoRaw);
-
-            } elseif ($tipo === 'propia3') {
-                $item['nombre'] = $row['nombre'] ?? $row['cliente'] ?? null;
-                $item['ctl'] = $row['ctl'] ?? null;
-                $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
-
-            } elseif ($tipo === 'propia12') {
-                $item['nombre'] = $row['nombre'] ?? $row['cliente'] ?? null;
-                $item['entidad'] = $row['entidad'] ?? null;
-                $item['cartera'] = $row['cartera'] ?? null;
-                $item['pagar_por_cuota'] = $this->parseMonto($montoRaw);
-            }
-
-            return $item;
         }, $rows);
 
-        return DB::transaction(function () use ($data, $meta, $desdeFull, $hastaFull) {
-            DB::table($meta['tabla'])->whereBetween($meta['fecha_col'], [$desdeFull, $hastaFull])->delete();
-            
+        return DB::transaction(function () use ($cartera, $data, $desde, $hasta) {
+            Gestion::query()
+                ->whereBelongsTo($cartera)
+                ->whereBetween('fecha_gestion', [$desde, $hasta])
+                ->delete();
+
             foreach (array_chunk($data, 500) as $chunk) {
-                DB::table($meta['tabla'])->insert($chunk);
+                Gestion::query()->insert($chunk);
             }
+
             return count($data);
         });
     }
 
-    public function parseMonto($valor) {
-        if (!$valor) return 0.00;
-        $limpio = str_replace(['S/', 's/', ' ', ','], ['', '', '', '.'], $valor);
-        return is_numeric($limpio) ? (float)$limpio : 0.00;
+    private function guardarLlamadas(string $tipo, array $rows, string $desde, string $hasta): int
+    {
+        $now = now();
+        $fuente = $this->fuenteLlamada($tipo);
+        $data = [];
+
+        foreach ($rows as $row) {
+            $source = array_change_key_case((array) $row, CASE_LOWER);
+            $dni = trim((string) $this->firstValue($source, 'documento', 'doc'));
+
+            if ($dni === '' || !ctype_digit($dni)) {
+                continue;
+            }
+
+            if ($tipo === 'abandonados') {
+                $fechaGestion = $this->parseFecha($this->firstValue($source, 'enterdate', 'datetime', 'fecha_evento'));
+                $telefono = $this->firstValue($source, 'callerid');
+                $resultadoGestion = $this->firstValue($source, 'event');
+
+                if ($fechaGestion === null) {
+                    continue;
+                }
+
+                $data[] = [
+                    'dni' => $dni,
+                    'telefono' => $this->normalizeCallText($telefono, 40),
+                    'resultado_gestion' => $this->normalizeCallText($resultadoGestion, 150),
+                    'resultado' => 'NO CONTACTO',
+                    'fecha_gestion' => $fechaGestion,
+                    'observaciones' => null,
+                    'fuente' => $fuente,
+                    'metadata' => json_encode($source, JSON_UNESCAPED_UNICODE),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                continue;
+            }
+
+            $fechaGestion = $this->parseFecha($this->firstValue($source, 'calldate', 'fecha_evento'));
+            $telefono = $this->firstValue($source, 'dst');
+            $resultadoGestion = $this->firstValue($source, 'disposition');
+
+            if ($fechaGestion === null) {
+                continue;
+            }
+
+            $data[] = [
+                'dni' => $dni,
+                'telefono' => $this->normalizeCallText($telefono, 40),
+                'resultado_gestion' => $this->normalizeCallText($resultadoGestion, 150),
+                'resultado' => 'NO CONTACTO',
+                'fecha_gestion' => $fechaGestion,
+                'observaciones' => null,
+                'fuente' => $fuente,
+                'metadata' => json_encode($source, JSON_UNESCAPED_UNICODE),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if ($data === []) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($fuente, $data, $desde, $hasta) {
+            Llamada::query()
+                ->where('fuente', $fuente)
+                ->whereBetween('fecha_gestion', [$desde, $hasta])
+                ->delete();
+
+            foreach (array_chunk($data, 500) as $chunk) {
+                Llamada::query()->insert($chunk);
+            }
+
+            return count($data);
+        });
     }
 
-    public function parseFecha($valor) {
-        if (!$valor || stripos($valor, 'invalida') !== false) return null;
-        $ts = strtotime($valor);
-        return $ts ? date('Y-m-d H:i:s', $ts) : null;
+    private function fuenteLlamada(string $tipo): string
+    {
+        return match ($tipo) {
+            'amd' => 'Llamadas_AMD',
+            'ivr' => 'Llamadas_IVR',
+            'abandonados' => 'Llamadas_Abandonadas',
+            default => $tipo,
+        };
+    }
+
+    private function normalizeCallText(mixed $value, int $limit): string
+    {
+        return mb_substr(trim((string) $value), 0, $limit);
+    }
+
+    private function firstValue(array $row, string ...$keys): mixed
+    {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $row) && $row[$key] !== '') {
+                return $row[$key];
+            }
+        }
+
+        return null;
+    }
+
+    public function parseMonto(mixed $valor): ?float
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        $limpio = str_replace(['S/', 's/', '$', ' '], '', (string) $valor);
+        $limpio = str_replace(',', '.', $limpio);
+
+        return is_numeric($limpio) ? (float) $limpio : null;
+    }
+
+    public function parseEntero(mixed $valor): ?int
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return is_numeric($valor) ? (int) $valor : null;
+    }
+
+    public function parseFecha(mixed $valor): ?string
+    {
+        if (!$valor || stripos((string) $valor, 'invalida') !== false) {
+            return null;
+        }
+
+        $timestamp = strtotime(str_replace('/', '-', (string) $valor));
+
+        return $timestamp ? date('Y-m-d H:i:s', $timestamp) : null;
     }
 }

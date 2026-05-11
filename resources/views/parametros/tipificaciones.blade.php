@@ -44,7 +44,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('parametros.tipificaciones.store') }}" class="mt-4">
+        <form method="POST" action="{{ route('configuracion.tipificaciones.store') }}" class="mt-4">
             @csrf
 
             <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
@@ -142,7 +142,7 @@
                                 <div class="flex items-center justify-center gap-2">
 
                                     <form id="form-tip-{{ $t->id }}" method="POST"
-                                          action="{{ route('parametros.tipificaciones.update', $t) }}">
+                                          action="{{ route('configuracion.tipificaciones.update', $t) }}">
                                         @csrf
                                         <button type="submit"
                                                 class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition"
@@ -156,7 +156,7 @@
                                     </form>
 
                                     <form method="POST"
-                                          action="{{ route('parametros.tipificaciones.destroy', $t) }}"
+                                          action="{{ route('configuracion.tipificaciones.destroy', $t) }}"
                                           onsubmit="return confirm('¿Eliminar esta tipificación?');">
                                         @csrf
                                         @method('DELETE')

@@ -2,208 +2,305 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cartera;
+use App\Services\CarteraService;
+use App\Services\GestionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Throwable;
-use App\Services\GestionService;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use Throwable;
 
 class GestionController extends Controller
 {
-    /**
-     * VISTAS DE LOS FORMULARIOS Y TABLAS
-     */
-    public function formPropia12() { return view('gestiones.propia12'); }
-    public function formPropia3()  { return view('gestiones.propia3'); }
-    public function formKpi()      { return view('gestiones.kpi'); }
-    public function formApdayc()   { return view('gestiones.apdayc'); }
+    public function index(Request $request)
+    {
+        if (!session()->has('usuario')) {
+            return redirect()->route('login');
+        }
+
+        $carteras = Cartera::query()
+            ->activa()
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
+        $carteraId = $request->integer('cartera_id') ?: $carteras->first()?->id;
+        $cartera = $carteraId ? $carteras->firstWhere('id', $carteraId) : null;
+        $tieneSincronizacion = $cartera && $this->getConfig($cartera->slug) !== null;
+
+        return view('gestiones.index', compact('carteras', 'carteraId', 'cartera', 'tieneSincronizacion'));
+    }
+
+    public function legacy(string $tipo, CarteraService $carteras)
+    {
+        try {
+            $cartera = $carteras->findBySlugOrFail($tipo);
+
+            return redirect()->route('gestiones.index', ['cartera_id' => $cartera->id]);
+        } catch (Throwable) {
+            return redirect()->route('gestiones.index');
+        }
+    }
 
     public function indexAmd(Request $request)
     {
-        $desde = $request->desde ?? date('Y-m-d');
-        $hasta = $request->hasta ?? date('Y-m-d');
-        $registros = DB::table('Llamadas_AMD')
-            ->whereBetween('calldate', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
-            ->orderBy('calldate', 'desc')
-            ->paginate(10)->appends($request->query());
-
-        return view('gestiones.amd', compact('registros', 'desde', 'hasta'));
-    }
-
-    public function indexAbandonados(Request $request)
-    {
-        $desde = $request->desde ?? date('Y-m-d');
-        $hasta = $request->hasta ?? date('Y-m-d');
-        $registros = DB::table('Llamadas_Abandonadas')
-            ->whereBetween('fecha_evento', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
-            ->orderBy('fecha_evento', 'desc')
-            ->paginate(10)->appends($request->query());
-
-        return view('gestiones.abandonados', compact('registros', 'desde', 'hasta'));
+        return $this->indexLlamadas($request, 'amd', 'gestiones.amd');
     }
 
     public function indexIvr(Request $request)
     {
-        $desde = $request->desde ?? date('Y-m-d');
-        $hasta = $request->hasta ?? date('Y-m-d');
-
-        $registros = DB::table('Llamadas_IVR')
-            ->whereBetween('calldate', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
-            ->orderBy('calldate', 'desc')
-            ->paginate(10)
-            ->appends($request->query());
-
-        return view('gestiones.ivr', compact('registros', 'desde', 'hasta'));
+        return $this->indexLlamadas($request, 'ivr', 'gestiones.ivr');
     }
-    /**
-     * SINCRONIZACIÓN DESDE CRM (Usando Jobs para segundo plano)
-     */
 
-    public function cargar(Request $request, $tipo)
+    public function indexAbandonados(Request $request)
     {
-        $request->validate([
-            'desde' => 'required|date',
-            'hasta' => 'required|date|after_or_equal:desde',
+        return $this->indexLlamadas($request, 'abandonados', 'gestiones.abandonados');
+    }
+
+    public function cargar(Request $request, GestionService $service)
+    {
+        $data = $request->validate([
+            'cartera_id' => ['required', 'integer', 'exists:carteras,id'],
+            'desde' => ['required', 'date'],
+            'hasta' => ['required', 'date', 'after_or_equal:desde'],
         ]);
 
-        try {
-            // Ejecución DIRECTA (el usuario espera mientras carga)
-            $service = new GestionService();
-            $count = $service->sincronizar($tipo, $request->desde, $request->hasta);
+        $cartera = Cartera::query()->findOrFail($data['cartera_id']);
 
-            // Al terminar, vuelve a la misma página y los datos ya estarán ahí
-            return back()->with('msg', "Sincronización de $tipo exitosa: $count registros procesados.");
-            
+        if ($this->getConfig($cartera->slug) === null) {
+            return back()->withInput()->with(
+                'error',
+                "La cartera {$cartera->nombre} no tiene sincronizacion CRM configurada. Usa la carga manual XLSX.",
+            );
+        }
+
+        try {
+            $count = $service->sincronizar($cartera->slug, $data['desde'], $data['hasta']);
+
+            return back()->with('msg', "Sincronizacion de {$cartera->nombre} exitosa: {$count} registros procesados.");
         } catch (Throwable $e) {
-            return back()->with('error', 'Error en la sincronización: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error en la sincronizacion: ' . $e->getMessage());
         }
     }
 
-    /**
-     * CONFIGURACIÓN PARA CARGA MANUAL (EXCEL)
-     */
-    private function getConfig($tipo)
+    private function indexLlamadas(Request $request, string $tipo, string $view)
+    {
+        $desde = $request->desde ?? date('Y-m-d');
+        $hasta = $request->hasta ?? date('Y-m-d');
+        $fuente = match ($tipo) {
+            'amd' => 'Llamadas_AMD',
+            'ivr' => 'Llamadas_IVR',
+            'abandonados' => 'Llamadas_Abandonadas',
+            default => $tipo,
+        };
+
+        $query = DB::table('llamadas')
+            ->where('fuente', $fuente)
+            ->whereBetween('fecha_gestion', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
+            ->orderByDesc('fecha_gestion');
+
+        if ($tipo === 'abandonados') {
+            $query->select(
+                'fecha_gestion as fecha_evento',
+                'resultado_gestion as event',
+                DB::raw('NULL as queue'),
+                'telefono as callerid',
+                DB::raw('NULL as timewait'),
+                'dni as documento',
+            );
+        } else {
+            $query->select(
+                'fecha_gestion as calldate',
+                DB::raw('NULL as campaign'),
+                'telefono as dst',
+                'resultado_gestion as disposition',
+                DB::raw('NULL as userfield'),
+                DB::raw('NULL as dialbase'),
+                'dni as doc',
+            );
+        }
+
+        $registros = $query->paginate(10)->appends($request->query());
+
+        return view($view, compact('registros', 'desde', 'hasta'));
+    }
+
+    private function getConfig(string $tipo): ?array
     {
         return match ($tipo) {
             'propia12' => [
-                'tabla' => 'Gestiones_1y2',
+                'cartera' => 'propia12',
                 'file_name' => 'plantilla_p12.xlsx',
-                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'cartera', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign']
+                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'cartera', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
             'propia3' => [
-                'tabla' => 'Gestiones_Propia3',
+                'cartera' => 'propia3',
                 'file_name' => 'plantilla_p3.xlsx',
-                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'ctl', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign']
+                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'ctl', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
-            'kpi' => [
-                'tabla' => 'Gestiones_Propia4',
-                'file_name' => 'plantilla_kpi.xlsx',
-                'headers' => ['documento', 'cliente', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'importe_financiamiento', 'nroCuotas', 'fecha_promesa', 'campaign']
+            'kpi', 'kp-invest', 'propia4' => [
+                'cartera' => 'kp-invest',
+                'file_name' => 'plantilla_kp_invest.xlsx',
+                'headers' => ['documento', 'cliente', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'importe_financiamiento', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
             'apdayc' => [
-                'tabla' => 'Gestiones_APDAYC',
+                'cartera' => 'apdayc',
                 'file_name' => 'plantilla_apdayc.xlsx',
-                'headers' => ['documento','LIC_ID', 'socio', 'value2', 'value1', 'fullname', 'fechaAgenda', 'dateprocessed', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign']
-            ],
-            'amd' => [
-                'tabla' => 'Llamadas_AMD',
-                'file_name' => 'plantilla_amd.xlsx',
-                'headers' => ['calldate', 'campaign', 'dst', 'disposition', 'userfield', 'contact', 'dialbase', 'doc']
-            ],
-            'ivr' => [
-                'tabla' => 'Llamadas_IVR',
-                'file_name' => 'plantilla_ivr.xlsx',
-                'headers' => ['calldate', 'campaign', 'dst', 'disposition', 'userfield', 'contact', 'dialbase', 'doc']
-            ],
-            'abandonados' => [
-                'tabla' => 'Llamadas_Abandonadas',
-                'file_name' => 'plantilla_abandonados.xlsx',
-                'headers' => ['fecha_evento', 'event', 'callidnum', 'guid', 'queue', 'enterdate', 'posabandon', 'posoriginal', 'callerid', 'timewait', 'documento']
+                'headers' => ['documento', 'LIC_ID', 'socio', 'value2', 'value1', 'fullname', 'fechaAgenda', 'dateprocessed', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign'],
             ],
             default => null,
         };
     }
 
-    /**
-     * DESCARGA DE PLANTILLA EXCEL
-     */
-    public function plantillaManual($tipo)
+    private function genericConfig(Cartera $cartera): array
     {
-        $config = $this->getConfig($tipo);
-        if (!$config) return back()->with('error', 'Cartera no válida.');
+        return [
+            'cartera' => $cartera->slug,
+            'file_name' => 'plantilla_gestiones_' . $cartera->slug . '.xlsx',
+            'headers' => [
+                'documento',
+                'cliente',
+                'tipificacion',
+                'resultado',
+                'asesor',
+                'operacion',
+                'entidad',
+                'subcartera',
+                'fecha_gestion',
+                'fecha_agenda',
+                'telefono',
+                'comentario',
+                'monto_promesa',
+                'nro_cuotas',
+                'fecha_promesa',
+                'campaign',
+            ],
+        ];
+    }
 
+    public function plantillaManual(Request $request)
+    {
+        $data = $request->validate([
+            'cartera_id' => ['required', 'integer', 'exists:carteras,id'],
+        ]);
+
+        $cartera = Cartera::query()->findOrFail($data['cartera_id']);
+        $config = $this->getConfig($cartera->slug) ?? $this->genericConfig($cartera);
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        
+
         foreach ($config['headers'] as $index => $label) {
             $sheet->setCellValueByColumnAndRow($index + 1, 1, $label);
             $sheet->getColumnDimensionByColumn($index + 1)->setAutoSize(true);
         }
 
         $writer = new Xlsx($spreadsheet);
+
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
         }, $config['file_name']);
     }
 
-    /**
-     * CARGA MANUAL EXCEL
-     */
-    public function cargarManual(Request $request, $tipo)
+    public function cargarManual(Request $request)
     {
-        $config = $this->getConfig($tipo);
-        if (!$config) return back()->with('error', 'Configuración no encontrada.');
+        $data = $request->validate([
+            'cartera_id' => ['required', 'integer', 'exists:carteras,id'],
+            'archivo' => ['required', 'file', 'mimes:xlsx', 'max:15360'],
+        ]);
 
-        $request->validate(['archivo' => 'required|file|mimes:xlsx|max:15360']);
+        $cartera = Cartera::query()->findOrFail($data['cartera_id']);
+        $config = $this->getConfig($cartera->slug) ?? $this->genericConfig($cartera);
 
         try {
             $spreadsheet = IOFactory::load($request->file('archivo')->getRealPath());
             $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
             $headers = $config['headers'];
             $data = [];
+            $now = now();
 
             foreach ($rows as $index => $row) {
-                if ($index === 1 || empty(trim($row['A'] ?? ''))) continue;
+                if ($index === 1 || empty(trim((string) ($row['A'] ?? '')))) {
+                    continue;
+                }
 
                 $rowData = [];
                 foreach ($headers as $idx => $key) {
                     $columnLetter = Coordinate::stringFromColumnIndex($idx + 1);
-                    $val = trim($row[$columnLetter] ?? '');
-
-                    if (in_array($key, ['dateprocessed', 'fechaAgenda', 'fecha_promesa', 'calldate', 'fecha_evento', 'enterdate'])) {
-                        $rowData[$key] = $this->parseExcelDate($val);
-                    } elseif (in_array($key, ['pagar_por_cuota', 'importe_financiamiento', 'montoPromesa'])) {
-                        $rowData[$key] = ($val === '' || $val === null) ? null : (float) str_replace(['$', ',', ' '], '', $val);
-                    } elseif (in_array($key, ['nroCuotas', 'nroCuota', 'contact'])) {
-                        $rowData[$key] = ($val === '' || $val === null) ? null : (int) $val;
-                    } else {
-                        $rowData[$key] = ($val === '') ? null : $val;
-                    }
+                    $rowData[$key] = $this->normalizeValue($key, $row[$columnLetter] ?? null);
                 }
-                $data[] = $rowData;
+
+                $data[] = $this->mapGestionManual((int) $cartera->id, $rowData, $now);
             }
 
-            if (empty($data)) return back()->with('error', 'No hay datos válidos.');
-
-            DB::beginTransaction();
-            foreach (array_chunk($data, 500) as $chunk) {
-                DB::table($config['tabla'])->insert($chunk);
+            if (empty($data)) {
+                return back()->withInput()->with('error', 'No hay datos validos en el XLSX.');
             }
-            DB::commit();
 
-            return back()->with('msg', "Carga manual exitosa: " . count($data) . " registros en $tipo.");
+            DB::transaction(function () use ($data) {
+                foreach (array_chunk($data, 500) as $chunk) {
+                    DB::table('gestiones')->insert($chunk);
+                }
+            });
 
+            return back()->with('msg', 'Carga manual exitosa: ' . count($data) . " registros en {$cartera->nombre}.");
         } catch (Throwable $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error al cargar gestiones: ' . $e->getMessage());
         }
     }
 
-    private function parseExcelDate($valor): ?string
+    private function normalizeValue(string $key, mixed $value): mixed
+    {
+        $value = $value instanceof \DateTimeInterface ? $value : trim((string) $value);
+
+        if (in_array($key, ['dateprocessed', 'fechaAgenda', 'fecha_agenda', 'fecha_gestion', 'fecha_promesa'], true)) {
+            return $this->parseExcelDate($value);
+        }
+
+        if (in_array($key, ['pagar_por_cuota', 'importe_financiamiento', 'montoPromesa', 'monto_promesa'], true)) {
+            return ($value === '' || $value === null) ? null : (float) str_replace(['$', ',', ' '], '', (string) $value);
+        }
+
+        if (in_array($key, ['nroCuotas', 'nroCuota', 'nro_cuotas'], true)) {
+            return ($value === '' || $value === null) ? null : (int) $value;
+        }
+
+        return $value === '' ? null : $value;
+    }
+
+    private function mapGestionManual(int $carteraId, array $row, \DateTimeInterface $now): array
+    {
+        return [
+            'cartera_id' => $carteraId,
+            'documento' => $row['documento'] ?? null,
+            'licencia_id' => $row['LIC_ID'] ?? null,
+            'socio' => $row['socio'] ?? null,
+            'cliente' => $row['nombre'] ?? $row['cliente'] ?? $row['socio'] ?? null,
+            'tipificacion' => $row['value2'] ?? $row['tipificacion'] ?? null,
+            'resultado' => $row['value1'] ?? $row['resultado'] ?? null,
+            'asesor' => $row['fullname'] ?? $row['asesor'] ?? null,
+            'operacion' => $row['operacion'] ?? null,
+            'entidad' => $row['entidad'] ?? null,
+            'subcartera' => $row['cartera'] ?? $row['ctl'] ?? $row['subcartera'] ?? null,
+            'fecha_gestion' => $row['dateprocessed'] ?? $row['fecha_gestion'] ?? null,
+            'fecha_agenda' => $row['fechaAgenda'] ?? $row['fecha_agenda'] ?? null,
+            'telefono' => $row['callerid'] ?? $row['telefono'] ?? null,
+            'comentario' => $row['comment'] ?? $row['comentario'] ?? null,
+            'monto_promesa' => $row['pagar_por_cuota'] ?? $row['importe_financiamiento'] ?? $row['montoPromesa'] ?? $row['monto_promesa'] ?? null,
+            'nro_cuotas' => $row['nroCuotas'] ?? $row['nroCuota'] ?? $row['nro_cuotas'] ?? null,
+            'fecha_promesa' => $row['fecha_promesa'] ?? null,
+            'campaign' => $row['campaign'] ?? null,
+            'origen' => 'manual',
+            'metadata' => json_encode($row, JSON_UNESCAPED_UNICODE),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
+    private function parseExcelDate(mixed $valor): ?string
     {
         if ($valor === null) {
             return null;
@@ -219,16 +316,14 @@ class GestionController extends Controller
             return null;
         }
 
-        // Si Excel lo entrega como serial numérico
         if (is_numeric($valor)) {
             try {
                 return ExcelDate::excelToDateTimeObject((float) $valor)->format('Y-m-d H:i:s');
-            } catch (\Throwable $e) {
+            } catch (Throwable) {
                 return null;
             }
         }
 
-        // Formatos más comunes de tus plantillas
         $formatos = [
             'd/m/Y H:i:s',
             'd/m/Y H:i',
@@ -243,13 +338,14 @@ class GestionController extends Controller
 
         foreach ($formatos as $formato) {
             $dt = \DateTime::createFromFormat($formato, $valor);
+
             if ($dt !== false) {
                 return $dt->format('Y-m-d H:i:s');
             }
         }
 
-        // Último intento
-        $ts = strtotime(str_replace('/', '-', $valor));
-        return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+        $timestamp = strtotime(str_replace('/', '-', $valor));
+
+        return $timestamp !== false ? date('Y-m-d H:i:s', $timestamp) : null;
     }
 }

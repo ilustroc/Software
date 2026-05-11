@@ -1,72 +1,62 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CarteraController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionController;
 use App\Http\Controllers\PagosController;
-use App\Http\Controllers\TipificacionController;
 use App\Http\Controllers\Reportes\ReporteGestionesController;
 use App\Http\Controllers\Reportes\ReportePagosController;
+use App\Http\Controllers\TipificacionController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function () {
-
-    // --- AUTENTICACIÓN ---
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', function () {
-        return session()->has('usuario') ? view('dashboard') : redirect()->route('login');
-    })->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // --- GESTIONES (CRM & MANUAL) ---
-    Route::prefix('gestiones')->group(function () {
-        Route::get('/propia12',   [GestionController::class, 'formPropia12'])->name('gestiones.propia12.form');
-        Route::get('/propia3',    [GestionController::class, 'formPropia3'])->name('gestiones.propia3.form');
-        Route::get('/kpi',        [GestionController::class, 'formKpi'])->name('gestiones.kpi.form');
-        Route::get('/apdayc', [GestionController::class, 'formApdayc'])->name('gestiones.apdayc.form');
-        Route::get('/amd',        [GestionController::class, 'indexAmd'])->name('gestiones.amd');
-        Route::get('/ivr', [GestionController::class, 'indexIvr'])->name('gestiones.ivr');
-        Route::get('/abandonados', [GestionController::class, 'indexAbandonados'])->name('gestiones.abandonados');
+    Route::prefix('gestiones')->name('gestiones.')->group(function () {
+        Route::get('/', [GestionController::class, 'index'])->name('index');
+        Route::post('/cargar', [GestionController::class, 'cargar'])->name('cargar');
+        Route::get('/plantilla', [GestionController::class, 'plantillaManual'])->name('manual.plantilla');
+        Route::post('/manual/cargar', [GestionController::class, 'cargarManual'])->name('manual.cargar');
 
-        // Sincronización CRM
-        Route::post('/{tipo}/cargar', [GestionController::class, 'cargar'])->name('gestiones.generica.cargar');
-        
-        // Carga Manual
-        Route::get('/manual/plantilla/{tipo}', [GestionController::class, 'plantillaManual'])->name('gestiones.manual.plantilla');
-        Route::post('/manual/cargar/{tipo}', [GestionController::class, 'cargarManual'])->name('gestiones.manual.cargar');
+        Route::get('/{legacy}', [GestionController::class, 'legacy'])
+            ->whereIn('legacy', ['propia12', 'propia3', 'kpi', 'kpinvest', 'kp-invest', 'propia4', 'apdayc'])
+            ->name('legacy');
     });
 
-    // --- PAGOS (Propia 1y2, 3 y 4) ---
-    Route::prefix('pagos')->group(function () {
-        Route::get('/{tipo}',            [PagosController::class, 'index'])->name('pagos.index');
-        Route::get('/{tipo}/plantilla',  [PagosController::class, 'template'])->name('pagos.template');
-        Route::post('/{tipo}/store',     [PagosController::class, 'store'])->name('pagos.store');
-        Route::post('/{tipo}/upload',    [PagosController::class, 'upload'])->name('pagos.upload');
-        Route::put('/{tipo}/{id}',       [PagosController::class, 'update'])->name('pagos.update'); // Usamos PUT para update
-        Route::delete('/{tipo}/{id}',    [PagosController::class, 'destroy'])->name('pagos.destroy');
+    Route::prefix('pagos')->name('pagos.')->group(function () {
+        Route::get('/', [PagosController::class, 'index'])->name('index');
+        Route::get('/plantilla', [PagosController::class, 'template'])->name('template');
+        Route::post('/', [PagosController::class, 'store'])->name('store');
+        Route::post('/upload', [PagosController::class, 'upload'])->name('upload');
+        Route::put('/{pago}', [PagosController::class, 'update'])->whereNumber('pago')->name('update');
+        Route::delete('/{pago}', [PagosController::class, 'destroy'])->whereNumber('pago')->name('destroy');
+        Route::get('/{legacy}', [PagosController::class, 'legacy'])
+            ->whereIn('legacy', ['propia12', 'propia3', 'propia4', 'kpi', 'kpinvest', 'kp-invest', 'apdayc'])
+            ->name('legacy');
     });
 
-    // --- REPORTES ---
-    Route::prefix('reportes')->group(function () {
-        
-        // Gestiones
-        Route::prefix('gestiones')->group(function () {
-            Route::get('/{tipo}', [ReporteGestionesController::class, 'index'])->name('reportes.gestiones.index');
-            Route::get('/{tipo}/xlsx', [ReporteGestionesController::class, 'xlsx'])->name('reportes.gestiones.xlsx');
-        });
-
-        // Pagos
-        Route::get('/pagos', [ReportePagosController::class, 'index'])->name('reportes.pagos.index');
-        Route::get('/pagos/xlsx', [ReportePagosController::class, 'xlsx'])->name('reportes.pagos.xlsx'); 
+    Route::prefix('reportes')->name('reportes.')->group(function () {
+        Route::get('/pagos', [ReportePagosController::class, 'index'])->name('pagos.index');
+        Route::get('/pagos/xlsx', [ReportePagosController::class, 'xlsx'])->name('pagos.xlsx');
+        Route::get('/gestiones', [ReporteGestionesController::class, 'index'])->name('gestiones.index');
+        Route::get('/gestiones/xlsx', [ReporteGestionesController::class, 'xlsx'])->name('gestiones.xlsx');
     });
 
-    // --- PARÁMETROS ---
-    Route::prefix('parametros')->group(function () {
-        Route::get('/tipificaciones', [TipificacionController::class, 'index'])->name('parametros.tipificaciones.index');
-        Route::post('/tipificaciones', [TipificacionController::class, 'store'])->name('parametros.tipificaciones.store');
-        Route::post('/tipificaciones/{tipificacion}', [TipificacionController::class, 'update'])->name('parametros.tipificaciones.update');
-        Route::delete('/tipificaciones/{tipificacion}', [TipificacionController::class, 'destroy'])->name('parametros.tipificaciones.destroy');
+    Route::prefix('configuracion')->name('configuracion.')->group(function () {
+        Route::get('/carteras', [CarteraController::class, 'index'])->name('carteras.index');
+        Route::post('/carteras', [CarteraController::class, 'store'])->name('carteras.store');
+
+        Route::get('/tipificaciones', [TipificacionController::class, 'index'])->name('tipificaciones.index');
+        Route::post('/tipificaciones', [TipificacionController::class, 'store'])->name('tipificaciones.store');
+        Route::post('/tipificaciones/{tipificacion}', [TipificacionController::class, 'update'])->name('tipificaciones.update');
+        Route::delete('/tipificaciones/{tipificacion}', [TipificacionController::class, 'destroy'])->name('tipificaciones.destroy');
     });
 
+    Route::redirect('/parametros/tipificaciones', '/configuracion/tipificaciones');
 });
