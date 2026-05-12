@@ -135,22 +135,22 @@ class GestionController extends Controller
             'propia12' => [
                 'cartera' => 'propia12',
                 'file_name' => 'plantilla_p12.xlsx',
-                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'cartera', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
+                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'dateprocessed', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
             'propia3' => [
                 'cartera' => 'propia3',
                 'file_name' => 'plantilla_p3.xlsx',
-                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'ctl', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
+                'headers' => ['documento', 'nombre', 'value2', 'value1', 'fullname', 'operacion', 'dateprocessed', 'callerid', 'comment', 'pagar_por_cuota', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
             'kpi', 'kp-invest', 'propia4' => [
                 'cartera' => 'kp-invest',
                 'file_name' => 'plantilla_kp_invest.xlsx',
-                'headers' => ['documento', 'cliente', 'value2', 'value1', 'fullname', 'operacion', 'entidad', 'dateprocessed', 'fechaAgenda', 'callerid', 'comment', 'importe_financiamiento', 'nroCuotas', 'fecha_promesa', 'campaign'],
+                'headers' => ['documento', 'cliente', 'value2', 'value1', 'fullname', 'operacion', 'dateprocessed', 'callerid', 'comment', 'importe_financiamiento', 'nroCuotas', 'fecha_promesa', 'campaign'],
             ],
             'apdayc' => [
                 'cartera' => 'apdayc',
                 'file_name' => 'plantilla_apdayc.xlsx',
-                'headers' => ['documento', 'LIC_ID', 'socio', 'value2', 'value1', 'fullname', 'fechaAgenda', 'dateprocessed', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign'],
+                'headers' => ['documento', 'LIC_ID', 'socio', 'value2', 'value1', 'fullname', 'dateprocessed', 'callerid', 'comment', 'montoPromesa', 'nroCuota', 'fecha_promesa', 'campaign'],
             ],
             default => null,
         };
@@ -163,19 +163,16 @@ class GestionController extends Controller
             'file_name' => 'plantilla_gestiones_' . $cartera->slug . '.xlsx',
             'headers' => [
                 'documento',
-                'cliente',
-                'tipificacion',
-                'resultado',
-                'asesor',
+                'nombre',
+                'value2',
+                'value1',
+                'fullname',
                 'operacion',
-                'entidad',
-                'subcartera',
-                'fecha_gestion',
-                'fecha_agenda',
-                'telefono',
-                'comentario',
+                'dateprocessed',
+                'callerid',
+                'comment',
                 'monto_promesa',
-                'nro_cuotas',
+                'nro_cuota',
                 'fecha_promesa',
                 'campaign',
             ],
@@ -264,8 +261,8 @@ class GestionController extends Controller
             return ($value === '' || $value === null) ? null : (float) str_replace(['$', ',', ' '], '', (string) $value);
         }
 
-        if (in_array($key, ['nroCuotas', 'nroCuota', 'nro_cuotas'], true)) {
-            return ($value === '' || $value === null) ? null : (int) $value;
+        if (in_array($key, ['nroCuotas', 'nroCuota', 'nro_cuotas', 'nro_cuota'], true)) {
+            return ($value === '' || $value === null) ? null : (string) $value;
         }
 
         return $value === '' ? null : $value;
@@ -276,25 +273,20 @@ class GestionController extends Controller
         return [
             'cartera_id' => $carteraId,
             'documento' => $row['documento'] ?? null,
-            'licencia_id' => $row['LIC_ID'] ?? null,
-            'socio' => $row['socio'] ?? null,
-            'cliente' => $row['nombre'] ?? $row['cliente'] ?? $row['socio'] ?? null,
-            'tipificacion' => $row['value2'] ?? $row['tipificacion'] ?? null,
-            'resultado' => $row['value1'] ?? $row['resultado'] ?? null,
-            'asesor' => $row['fullname'] ?? $row['asesor'] ?? null,
-            'operacion' => $row['operacion'] ?? null,
-            'entidad' => $row['entidad'] ?? null,
-            'subcartera' => $row['cartera'] ?? $row['ctl'] ?? $row['subcartera'] ?? null,
-            'fecha_gestion' => $row['dateprocessed'] ?? $row['fecha_gestion'] ?? null,
-            'fecha_agenda' => $row['fechaAgenda'] ?? $row['fecha_agenda'] ?? null,
-            'telefono' => $row['callerid'] ?? $row['telefono'] ?? null,
-            'comentario' => $row['comment'] ?? $row['comentario'] ?? null,
+            'nombre' => $row['nombre'] ?? $row['cliente'] ?? $row['socio'] ?? null,
+            'value2' => $row['value2'] ?? null,
+            'value1' => $row['value1'] ?? null,
+            'fullname' => $row['fullname'] ?? null,
+            'operacion' => $row['operacion'] ?? $row['LIC_ID'] ?? null,
+            'dateprocessed' => $row['dateprocessed'] ?? null,
+            'callerid' => $row['callerid'] ?? null,
+            'comment' => $row['comment'] ?? null,
             'monto_promesa' => $row['pagar_por_cuota'] ?? $row['importe_financiamiento'] ?? $row['montoPromesa'] ?? $row['monto_promesa'] ?? null,
-            'nro_cuotas' => $row['nroCuotas'] ?? $row['nroCuota'] ?? $row['nro_cuotas'] ?? null,
+            'nro_cuota' => $row['nroCuotas'] ?? $row['nroCuota'] ?? $row['nro_cuota'] ?? null,
             'fecha_promesa' => $row['fecha_promesa'] ?? null,
             'campaign' => $row['campaign'] ?? null,
             'origen' => 'manual',
-            'metadata' => json_encode($row, JSON_UNESCAPED_UNICODE),
+            'legacy_id' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ];

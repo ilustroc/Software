@@ -60,32 +60,29 @@ class GestionService
     {
         $cartera = $this->carteras->findBySlugOrFail($carteraSlug);
         $now = now();
-        $data = array_map(function ($row) use ($cartera, $now) {
+        $data = array_map(function ($row) use ($cartera, $carteraSlug, $now) {
             $source = array_change_key_case((array) $row, CASE_LOWER);
             $monto = $this->firstValue($source, 'pagar_por_cuota', 'importecuota', 'importe_financiamiento', 'importefinanciamiento', 'montopromesa');
 
             return [
                 'cartera_id' => $cartera->id,
                 'documento' => $this->firstValue($source, 'documento'),
-                'licencia_id' => $this->firstValue($source, 'lic_id'),
-                'socio' => $this->firstValue($source, 'socio'),
-                'cliente' => $this->firstValue($source, 'nombre', 'cliente', 'socio'),
-                'tipificacion' => $this->firstValue($source, 'value2'),
-                'resultado' => $this->firstValue($source, 'value1'),
-                'asesor' => $this->firstValue($source, 'fullname'),
-                'operacion' => $this->firstValue($source, 'operacion'),
-                'entidad' => $this->firstValue($source, 'entidad'),
-                'subcartera' => $this->firstValue($source, 'cartera', 'ctl'),
-                'fecha_gestion' => $this->parseFecha($this->firstValue($source, 'dateprocessed')),
-                'fecha_agenda' => $this->parseFecha($this->firstValue($source, 'fechaagenda')),
-                'telefono' => $this->firstValue($source, 'callerid'),
-                'comentario' => $this->firstValue($source, 'comment'),
+                'nombre' => $this->nombreGestion($carteraSlug, $source),
+                'value2' => $this->firstValue($source, 'value2'),
+                'value1' => $this->firstValue($source, 'value1'),
+                'fullname' => $this->firstValue($source, 'fullname'),
+                'operacion' => $carteraSlug === 'apdayc'
+                    ? $this->firstValue($source, 'lic_id')
+                    : $this->firstValue($source, 'operacion'),
+                'dateprocessed' => $this->parseFecha($this->firstValue($source, 'dateprocessed')),
+                'callerid' => $this->firstValue($source, 'callerid'),
+                'comment' => $this->firstValue($source, 'comment'),
                 'monto_promesa' => $this->parseMonto($monto),
-                'nro_cuotas' => $this->parseEntero($this->firstValue($source, 'nrocuotas', 'nrocuota')),
+                'nro_cuota' => $this->firstValue($source, 'nrocuotas', 'nrocuota'),
                 'fecha_promesa' => $this->parseFecha($this->firstValue($source, 'fecha_promesa', 'fechapromesa')),
                 'campaign' => $this->firstValue($source, 'campaign'),
                 'origen' => 'crm',
-                'metadata' => json_encode($source, JSON_UNESCAPED_UNICODE),
+                'legacy_id' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -94,7 +91,7 @@ class GestionService
         return DB::transaction(function () use ($cartera, $data, $desde, $hasta) {
             Gestion::query()
                 ->whereBelongsTo($cartera)
-                ->whereBetween('fecha_gestion', [$desde, $hasta])
+                ->whereBetween('dateprocessed', [$desde, $hasta])
                 ->delete();
 
             foreach (array_chunk($data, 500) as $chunk) {
@@ -197,6 +194,15 @@ class GestionService
     private function normalizeCallText(mixed $value, int $limit): string
     {
         return mb_substr(trim((string) $value), 0, $limit);
+    }
+
+    private function nombreGestion(string $carteraSlug, array $source): mixed
+    {
+        return match ($carteraSlug) {
+            'apdayc' => $this->firstValue($source, 'socio'),
+            'kp-invest' => $this->firstValue($source, 'cliente'),
+            default => $this->firstValue($source, 'nombre'),
+        };
     }
 
     private function firstValue(array $row, string ...$keys): mixed

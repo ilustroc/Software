@@ -21,7 +21,7 @@
 
     $layoutHoy = now()->toDateString();
     $layoutPagosHoy = \App\Models\Pago::query()->whereDate('fecha', $layoutHoy)->count();
-    $layoutGestionesHoy = \App\Models\Gestion::query()->whereDate('fecha_gestion', $layoutHoy)->count();
+    $layoutGestionesHoy = \App\Models\Gestion::query()->whereDate('dateprocessed', $layoutHoy)->count();
     $layoutCarteraMayor = \Illuminate\Support\Facades\DB::table('pagos')
         ->join('carteras', 'carteras.id', '=', 'pagos.cartera_id')
         ->whereNull('pagos.deleted_at')

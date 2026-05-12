@@ -42,7 +42,7 @@ class DashboardController extends Controller
 
         $gestionesPorCarteraDia = DB::table('gestiones as g')
             ->join('carteras as c', 'c.id', '=', 'g.cartera_id')
-            ->whereBetween('g.fecha_gestion', [
+            ->whereBetween('g.dateprocessed', [
                 $hoy->copy()->startOfDay()->toDateTimeString(),
                 $hoy->copy()->endOfDay()->toDateTimeString(),
             ])

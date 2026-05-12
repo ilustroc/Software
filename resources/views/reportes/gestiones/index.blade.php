@@ -80,12 +80,12 @@
                         <th>Fecha</th>
                         <th>Cartera</th>
                         <th>Documento</th>
-                        <th>Cliente/Socio</th>
+                        <th>Nombre</th>
                         <th>Telefono</th>
-                        <th>Tipificacion</th>
-                        <th>Resultado</th>
+                        <th>Value2</th>
+                        <th>Value1</th>
                         <th>Operacion</th>
-                        <th>Gestor</th>
+                        <th>Fullname</th>
                         <th>Campana</th>
                     </tr>
                 </thead>
@@ -94,16 +94,16 @@
                     @forelse($registros as $r)
                         <tr>
                             <td class="whitespace-nowrap text-slate-700">
-                                {{ $r->fecha_gestion ? \Carbon\Carbon::parse($r->fecha_gestion)->format('d/m/Y') : '' }}
+                                {{ $r->dateprocessed ? \Carbon\Carbon::parse($r->dateprocessed)->format('d/m/Y') : '' }}
                             </td>
                             <td class="whitespace-nowrap">{{ $r->cartera_nombre }}</td>
                             <td class="whitespace-nowrap">{{ $r->documento }}</td>
-                            <td>{{ $r->cliente ?? $r->socio }}</td>
-                            <td class="whitespace-nowrap">{{ $r->telefono }}</td>
-                            <td>{{ $r->tipificacion }}</td>
-                            <td>{{ $r->resultado }}</td>
+                            <td>{{ $r->nombre }}</td>
+                            <td class="whitespace-nowrap">{{ $r->callerid }}</td>
+                            <td>{{ $r->value2 }}</td>
+                            <td>{{ $r->value1 }}</td>
                             <td class="whitespace-nowrap">{{ $r->operacion }}</td>
-                            <td class="whitespace-nowrap">{{ $r->asesor }}</td>
+                            <td class="whitespace-nowrap">{{ $r->fullname }}</td>
                             <td>{{ $r->campaign }}</td>
                         </tr>
                     @empty

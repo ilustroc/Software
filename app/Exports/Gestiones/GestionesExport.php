@@ -30,24 +30,20 @@ class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
             ->select(
                 'c.nombre as cartera',
                 'g.documento',
-                'g.cliente',
-                'g.socio',
-                'g.tipificacion',
-                'g.resultado',
-                'g.asesor',
+                'g.nombre',
+                'g.value2',
+                'g.value1',
+                'g.fullname',
                 'g.operacion',
-                'g.entidad',
-                'g.subcartera',
-                'g.fecha_gestion',
-                'g.fecha_agenda',
-                'g.telefono',
-                'g.comentario',
+                'g.dateprocessed',
+                'g.callerid',
+                'g.comment',
                 'g.monto_promesa',
-                'g.nro_cuotas',
+                'g.nro_cuota',
                 'g.fecha_promesa',
                 'g.campaign',
             )
-            ->whereBetween('g.fecha_gestion', [$this->desde . ' 00:00:00', $this->hasta . ' 23:59:59']);
+            ->whereBetween('g.dateprocessed', [$this->desde . ' 00:00:00', $this->hasta . ' 23:59:59']);
 
         if ($this->carteraId) {
             $query->where('g.cartera_id', $this->carteraId);
@@ -58,10 +54,10 @@ class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
         }
 
         if ($this->gestor !== '') {
-            $query->where('g.asesor', 'like', "%{$this->gestor}%");
+            $query->where('g.fullname', 'like', "%{$this->gestor}%");
         }
 
-        return $query->orderByDesc('g.fecha_gestion');
+        return $query->orderByDesc('g.dateprocessed');
     }
 
     public function headings(): array
@@ -69,19 +65,16 @@ class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
         return [
             'Cartera',
             'Documento',
-            'Cliente/Socio',
-            'Tipificacion',
-            'Resultado',
-            'Gestor/Usuario',
+            'Nombre',
+            'Value2',
+            'Value1',
+            'Fullname',
             'Operacion',
-            'Entidad',
-            'Subcartera',
-            'Fecha Gestion',
-            'Fecha Agenda',
-            'Telefono',
-            'Comentario',
+            'Dateprocessed',
+            'Callerid',
+            'Comment',
             'Monto promesa',
-            'Nro cuotas',
+            'Nro cuota',
             'Fecha promesa',
             'Campana',
         ];
@@ -94,19 +87,16 @@ class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
         return [
             $row->cartera ?? '',
             (string) ($row->documento ?? ''),
-            $row->cliente ?? $row->socio ?? '',
-            $row->tipificacion ?? '',
-            $row->resultado ?? '',
-            $row->asesor ?? '',
+            $row->nombre ?? '',
+            $row->value2 ?? '',
+            $row->value1 ?? '',
+            $row->fullname ?? '',
             (string) ($row->operacion ?? ''),
-            $row->entidad ?? '',
-            $row->subcartera ?? '',
-            $formatDate($row->fecha_gestion ?? null),
-            $formatDate($row->fecha_agenda ?? null),
-            (string) ($row->telefono ?? ''),
-            $row->comentario ?? '',
+            $formatDate($row->dateprocessed ?? null),
+            (string) ($row->callerid ?? ''),
+            $row->comment ?? '',
             $row->monto_promesa ?? '',
-            $row->nro_cuotas ?? '',
+            $row->nro_cuota ?? '',
             $formatDate($row->fecha_promesa ?? null),
             (string) ($row->campaign ?? ''),
         ];
@@ -117,7 +107,7 @@ class GestionesExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
         return [
             'B' => NumberFormat::FORMAT_TEXT,
             'G' => NumberFormat::FORMAT_TEXT,
-            'L' => NumberFormat::FORMAT_TEXT,
+            'I' => NumberFormat::FORMAT_TEXT,
         ];
     }
 

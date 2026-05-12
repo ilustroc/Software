@@ -21,7 +21,7 @@ class ReporteGestionesController extends Controller
         [$desde, $hasta, $carteraId, $dni, $gestor] = $this->filters($request);
 
         $query = $this->baseQuery()
-            ->whereBetween('g.fecha_gestion', [$desde . ' 00:00:00', $hasta . ' 23:59:59']);
+            ->whereBetween('g.dateprocessed', [$desde . ' 00:00:00', $hasta . ' 23:59:59']);
 
         if ($carteraId) {
             $query->where('g.cartera_id', $carteraId);
@@ -32,11 +32,11 @@ class ReporteGestionesController extends Controller
         }
 
         if ($gestor !== '') {
-            $query->where('g.asesor', 'like', "%{$gestor}%");
+            $query->where('g.fullname', 'like', "%{$gestor}%");
         }
 
         $registros = $query
-            ->orderByDesc('g.fecha_gestion')
+            ->orderByDesc('g.dateprocessed')
             ->paginate(10)
             ->appends($request->query());
 
@@ -95,20 +95,17 @@ class ReporteGestionesController extends Controller
             ->select(
                 'g.id',
                 'c.nombre as cartera_nombre',
-                'g.fecha_gestion',
+                'g.dateprocessed',
                 'g.documento',
-                'g.cliente',
-                'g.socio',
-                'g.telefono',
-                'g.tipificacion',
-                'g.resultado',
+                'g.nombre',
+                'g.callerid',
+                'g.value2',
+                'g.value1',
                 'g.operacion',
-                'g.asesor',
+                'g.fullname',
                 'g.campaign',
-                'g.entidad',
-                'g.subcartera',
                 'g.monto_promesa',
-                'g.nro_cuotas',
+                'g.nro_cuota',
                 'g.fecha_promesa',
             );
     }
